@@ -2,13 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { FicheConsultation } from '../types/clinical';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kmamycrltmhbhidpwlzx.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = 
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
+  'sb_publishable_uR8o7L_NGiObU8oudwBwDQ_cXtQFL2j';
 
 export const isSupabaseConfigured = Boolean(
   supabaseUrl && supabaseAnonKey && supabaseAnonKey.trim() !== ''
 );
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey || 'dummy-key');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Charge les fiches depuis Supabase si configuré
