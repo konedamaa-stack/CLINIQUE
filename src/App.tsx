@@ -9,6 +9,12 @@ import { ImplementationPlanView } from './components/ImplementationPlanView';
 import { AppointmentsView } from './components/AppointmentsView';
 import type { FicheConsultation, TypePopulation } from './types/clinical';
 import { INITIAL_MOCK_FICHES, calculateKPIsFromFiches } from './data/mockPatients';
+import {
+  isSupabaseConfigured,
+  fetchConsultationsFromSupabase,
+  upsertConsultationToSupabase,
+  deleteConsultationFromSupabase
+} from './lib/supabase';
 
 export const App: React.FC = () => {
   const [fiches, setFiches] = useState<FicheConsultation[]>(() => {
@@ -33,6 +39,20 @@ export const App: React.FC = () => {
   const [registryFilterTB, setRegistryFilterTB] = useState<boolean>(false);
   const [registryFilterPop, setRegistryFilterPop] = useState<TypePopulation | null>(null);
 
+  // Sync with Supabase on mount if configured
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetchConsultationsFromSupabase().then(({ data, error }) => {
+        if (data && data.length > 0) {
+          setFiches(data);
+          showToast(`✓ ${data.length} consultations chargées depuis Supabase`);
+        } else if (error) {
+          console.warn('Supabase fetch notice:', error);
+        }
+      });
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('clinique_consultations_ci', JSON.stringify(fiches));
   }, [fiches]);
@@ -56,13 +76,25 @@ export const App: React.FC = () => {
       }
     });
 
-    showToast(`✓ Fiche de consultation enregistrée pour ${savedFiche.admin.nom} ${savedFiche.admin.prenoms} (N° ${savedFiche.admin.numOrdre})`);
+    // Cloud sync
+    if (isSupabaseConfigured) {
+      upsertConsultationToSupabase(savedFiche).catch((err) => {
+        console.error('Supabase sync error on save:', err);
+      });
+    }
+
+    showToast(`✓ Fiche enregistrée pour ${savedFiche.admin.nom} ${savedFiche.admin.prenoms} (N° ${savedFiche.admin.numOrdre})`);
     setEditingFiche(null);
     setCurrentTab('registry');
   };
 
   const handleDeleteFiche = (id: string) => {
     setFiches((prev) => prev.filter((f) => f.id !== id));
+    if (isSupabaseConfigured) {
+      deleteConsultationFromSupabase(id).catch((err) => {
+        console.error('Supabase delete error:', err);
+      });
+    }
     showToast('Fiche supprimée du registre.');
   };
 
@@ -134,18 +166,27 @@ export const App: React.FC = () => {
   };
 
   const handleUpdateFicheSuivi = (ficheId: string, updates: Partial<FicheConsultation['suivi']>) => {
+    let updatedFiche: FicheConsultation | null = null;
     setFiches((prev) => prev.map((f) => {
       if (f.id === ficheId) {
-        return {
+        updatedFiche = {
           ...f,
           suivi: {
             ...f.suivi,
             ...updates
           }
         };
+        return updatedFiche;
       }
       return f;
     }));
+
+    if (isSupabaseConfigured && updatedFiche) {
+      upsertConsultationToSupabase(updatedFiche).catch((err) => {
+        console.error('Supabase sync error on update suivi:', err);
+      });
+    }
+
     showToast('Statut du rendez-vous mis à jour.');
   };
 
@@ -206,6 +247,7 @@ export const App: React.FC = () => {
         selectedSite={selectedSite}
         onSelectSite={setSelectedSite}
         casPresumesTBCount={stats.casPresumesTBTotal}
+        isSupabaseConnected={isSupabaseConfigured}
       />
 
       {/* Main Content Area */}

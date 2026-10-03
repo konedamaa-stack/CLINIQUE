@@ -8,7 +8,8 @@ import {
   Building2, 
   PlusCircle, 
   ShieldAlert,
-  Calendar
+  Calendar,
+  Database
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -17,6 +18,7 @@ interface HeaderProps {
   selectedSite: string;
   onSelectSite: (site: string) => void;
   casPresumesTBCount: number;
+  isSupabaseConnected?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   selectedSite,
   onSelectSite,
   casPresumesTBCount,
+  isSupabaseConnected = false,
 }) => {
   return (
     <header style={{
@@ -131,6 +134,22 @@ export const Header: React.FC<HeaderProps> = ({
               <option value="Hôpital Général de San Pédro" style={{ color: '#0f172a' }}>HG San Pédro</option>
             </select>
           </div>
+        </div>
+
+        {/* Supabase Cloud Connection Status */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: isSupabaseConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+          border: `1px solid ${isSupabaseConnected ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+          padding: '6px 12px',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          color: isSupabaseConnected ? '#34d399' : '#fcd34d'
+        }}>
+          <Database size={15} />
+          <span>{isSupabaseConnected ? 'Supabase Cloud Actif' : 'Stockage Local (Offline-Ready)'}</span>
         </div>
 
         {/* Action Buttons */}
