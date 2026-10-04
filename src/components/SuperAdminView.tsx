@@ -72,6 +72,10 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const [staffTab, setStaffTab] = useState<'create' | 'list'>('create');
   const [staffAccounts, setStaffAccounts] = useState<Record<string, { password: string; user: AuthUser }>>(() => getAllStaffAccounts());
+  const [editingStaffAccount, setEditingStaffAccount] = useState<{ email: string; user: AuthUser; password: string } | null>(null);
+  const [editStaffNom, setEditStaffNom] = useState('');
+  const [editStaffPassword, setEditStaffPassword] = useState('');
+  const [showEditStaffPass, setShowEditStaffPass] = useState(false);
 
   // New Staff form state
   const [newStaffNom, setNewStaffNom] = useState('');
@@ -258,6 +262,32 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       message: `Identifiants du Directeur mis à jour pour "${updated.nom}". Nouveau login : ${cleanLogin}`
     });
     setEditDirectorClinic(null);
+  };
+
+  const handleOpenEditStaffAccount = (email: string, user: AuthUser, pass: string) => {
+    setEditingStaffAccount({ email, user, password: pass });
+    setEditStaffNom(user.nomComplet);
+    setEditStaffPassword(pass);
+    setShowEditStaffPass(false);
+  };
+
+  const handleSaveStaffAccountChanges = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaffAccount) return;
+    const cleanNom = editStaffNom.trim() || editingStaffAccount.user.nomComplet;
+    const cleanPassword = editStaffPassword.trim() || 'Password123!';
+
+    const updatedUser: AuthUser = {
+      ...editingStaffAccount.user,
+      nomComplet: cleanNom
+    };
+    saveSuperAdminStaffAccount(editingStaffAccount.email, cleanPassword, updatedUser);
+    setStaffAccounts(getAllStaffAccounts());
+    setStaffFeedback({
+      type: 'success',
+      message: `Identifiants et mot de passe mis à jour pour ${cleanNom} !`
+    });
+    setEditingStaffAccount(null);
   };
 
   const handleCopyClipboard = (text: string) => {
@@ -1888,32 +1918,56 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                               </td>
 
                               <td style={{ padding: '12px', textAlign: 'center' }}>
-                                {!isMainSuperAdmin ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                                   <button
                                     type="button"
-                                    onClick={() => handleDeleteStaffAccount(email)}
+                                    onClick={() => handleOpenEditStaffAccount(email, data.user, data.password)}
                                     style={{
-                                      padding: '6px 10px',
-                                      background: '#fef2f2',
-                                      border: '1px solid #fecaca',
-                                      color: '#ef4444',
+                                      padding: '5px 9px',
+                                      background: '#eff6ff',
+                                      border: '1px solid #bfdbfe',
+                                      color: '#1d4ed8',
                                       borderRadius: '6px',
                                       cursor: 'pointer',
                                       fontSize: '0.78rem',
+                                      fontWeight: 600,
                                       display: 'inline-flex',
                                       alignItems: 'center',
-                                      gap: '4px'
+                                      gap: '3px'
                                     }}
-                                    title="Révoquer ce compte"
+                                    title="Modifier le nom et mot de passe"
                                   >
-                                    <Trash2 size={13} />
-                                    Révoquer
+                                    <Edit2 size={12} />
+                                    Modifier
                                   </button>
-                                ) : (
-                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
-                                    Super Admin
-                                  </span>
-                                )}
+
+                                  {!isMainSuperAdmin ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteStaffAccount(email)}
+                                      style={{
+                                        padding: '5px 9px',
+                                        background: '#fef2f2',
+                                        border: '1px solid #fecaca',
+                                        color: '#ef4444',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.78rem',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px'
+                                      }}
+                                      title="Révoquer ce compte"
+                                    >
+                                      <Trash2 size={12} />
+                                      Révoquer
+                                    </button>
+                                  ) : (
+                                    <span style={{ fontSize: '0.72rem', color: '#c2410c', fontWeight: 700, background: '#ffedd5', padding: '2px 6px', borderRadius: '4px' }}>
+                                      Principal
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -2093,6 +2147,175 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   }}
                 >
                   Enregistrer les Nouveaux Identifiants
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Modifier un Compte Praticien */}
+      {editingStaffAccount && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 1400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '500px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #ea580c 100%)',
+              color: '#ffffff',
+              padding: '18px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <KeyRound size={20} color="#fed7aa" />
+                  Modifier le Compte Soignant
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#ffedd5' }}>
+                  Établissement : {editingStaffAccount.user.structureNom}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingStaffAccount(null)}
+                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveStaffAccountChanges} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Nom Complet du Praticien *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editStaffNom}
+                  onChange={(e) => setEditStaffNom(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Identifiant de Connexion (Login / Email)
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingStaffAccount.email}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    color: '#64748b',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box',
+                    cursor: 'not-allowed'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Nouveau Mot de Passe *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showEditStaffPass ? 'text' : 'password'}
+                    required
+                    value={editStaffPassword}
+                    onChange={(e) => setEditStaffPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 42px 10px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditStaffPass(!showEditStaffPass)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#64748b'
+                    }}
+                  >
+                    {showEditStaffPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingStaffAccount(null)}
+                  style={{
+                    padding: '10px 18px',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 22px',
+                    background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)'
+                  }}
+                >
+                  Enregistrer les Modifications
                 </button>
               </div>
             </form>

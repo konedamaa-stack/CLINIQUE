@@ -168,11 +168,14 @@ export const App: React.FC = () => {
     if (user.structureNom) {
       setSelectedSite(user.structureNom);
     }
-    // Basculer automatiquement sur le tableau de bord Super Admin
+    // Basculer automatiquement et directement sur le tableau de bord Super Admin
     if (user.role === 'super_admin' || user.email === 'konedamaa@gmail.com') {
       setCurrentTab('superadmin');
+      window.location.hash = 'superadmin';
+      showToast(`👑 Accès Super Administrateur National - Bienvenue ${user.nomComplet}`);
+    } else {
+      showToast(`✓ Bienvenue ${user.nomComplet}`);
     }
-    showToast(`👑 Bienvenue ${user.nomComplet}`);
   };
 
   const handleLogout = async () => {

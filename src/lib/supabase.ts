@@ -126,6 +126,12 @@ export function normalizeLogin(str: string): string {
     .trim();
 }
 
+export function isPasswordMatch(expected: string, given: string): boolean {
+  if (expected === given) return true;
+  if (expected.toLowerCase() === given.toLowerCase()) return true;
+  return false;
+}
+
 const USER_SUPER_ADMIN: AuthUser = {
   id: 'super-admin-adama-kone',
   email: 'konedamaa@gmail.com',
@@ -340,7 +346,7 @@ export async function signInWithEmail(identifier: string, password: string): Pro
 
   // 1. Recherche directe dans la liste
   if (allStaff[cleanId]) {
-    if (allStaff[cleanId].password === password) {
+    if (isPasswordMatch(allStaff[cleanId].password, password)) {
       const staffUser = allStaff[cleanId].user;
       localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
       return { user: staffUser, error: null };
@@ -351,7 +357,7 @@ export async function signInWithEmail(identifier: string, password: string): Pro
 
   // 2. Recherche par clé normalisée (sans accents, sans dr/inf, sans espaces)
   if (normInput && allStaff[normInput]) {
-    if (allStaff[normInput].password === password) {
+    if (isPasswordMatch(allStaff[normInput].password, password)) {
       const staffUser = allStaff[normInput].user;
       localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
       return { user: staffUser, error: null };
@@ -385,7 +391,7 @@ export async function signInWithEmail(identifier: string, password: string): Pro
     );
 
     if (matches) {
-      if (account.password === password) {
+      if (isPasswordMatch(account.password, password)) {
         localStorage.setItem('clinique_auth_user', JSON.stringify(account.user));
         return { user: account.user, error: null };
       } else {
