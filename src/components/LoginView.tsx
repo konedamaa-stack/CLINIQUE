@@ -3,19 +3,17 @@ import {
   Activity, 
   Lock, 
   Mail, 
-  User, 
-  Building2, 
   ShieldCheck, 
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Sparkles,
-  BadgeAlert,
-  CheckCircle2,
-  LogIn
+  Sparkles, 
+  BadgeAlert, 
+  CheckCircle2, 
+  ShieldAlert 
 } from 'lucide-react';
-import type { AuthUser, UserRole } from '../types/auth';
-import { signInWithEmail, signUpWithEmail, DEMO_USERS } from '../lib/supabase';
+import type { AuthUser } from '../types/auth';
+import { signInWithEmail, getAllStaffAccounts } from '../lib/supabase';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -26,16 +24,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
   onContinueAsGuest
 }) => {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Registration fields
-  const [nomComplet, setNomComplet] = useState('');
-  const [role, setRole] = useState<UserRole>('medecin');
-  const [structureNom, setStructureNom] = useState('Centre de Santé Urbain de Treichville (Abidjan)');
-  const [matricule, setMatricule] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -48,50 +39,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
     setIsLoading(true);
 
     try {
-      if (tab === 'login') {
-        if (!email || !password) {
-          setErrorMsg('Veuillez renseigner votre email et mot de passe.');
-          setIsLoading(false);
-          return;
-        }
+      if (!email || !password) {
+        setErrorMsg('Veuillez renseigner votre email et mot de passe.');
+        setIsLoading(false);
+        return;
+      }
 
-        const { user, error } = await signInWithEmail(email, password);
-        if (error) {
-          setErrorMsg(error);
-        } else if (user) {
-          onLoginSuccess(user);
-        }
-      } else {
-        // Inscription
-        if (!email || !password || !nomComplet) {
-          setErrorMsg('Veuillez remplir tous les champs obligatoires.');
-          setIsLoading(false);
-          return;
-        }
-
-        if (password.length < 6) {
-          setErrorMsg('Le mot de passe doit contenir au moins 6 caractères.');
-          setIsLoading(false);
-          return;
-        }
-
-        const { user, error, emailConfirmationRequired } = await signUpWithEmail(email, password, {
-          nomComplet,
-          role,
-          structureNom,
-          numeroMatricule: matricule
-        });
-
-        if (error) {
-          setErrorMsg(error);
-        } else if (user) {
-          if (emailConfirmationRequired) {
-            setSuccessMsg('Compte créé avec succès ! Un e-mail de confirmation vous a été envoyé. Vous pouvez maintenant vous connecter.');
-            setTab('login');
-          } else {
-            onLoginSuccess(user);
-          }
-        }
+      const { user, error } = await signInWithEmail(email, password);
+      if (error) {
+        setErrorMsg(error);
+      } else if (user) {
+        onLoginSuccess(user);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Une erreur inattendue est survenue.');
@@ -101,7 +59,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
   };
 
   const handleQuickDemo = (demoEmail: string) => {
-    const demo = DEMO_USERS[demoEmail];
+    const allAccounts = getAllStaffAccounts();
+    const demo = allAccounts[demoEmail.toLowerCase()];
     if (demo) {
       setEmail(demo.user.email);
       setPassword(demo.password);
@@ -205,57 +164,19 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </p>
         </div>
 
-        {/* Tab switch : Connexion vs Inscription */}
+        {/* Security Warning / Super Admin Access Policy */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          background: 'rgba(0, 0, 0, 0.3)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          padding: '12px 20px',
+          background: 'rgba(234, 88, 12, 0.1)',
+          borderBottom: '1px solid rgba(234, 88, 12, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
         }}>
-          <button
-            type="button"
-            onClick={() => { setTab('login'); setErrorMsg(null); }}
-            style={{
-              padding: '13px',
-              border: 'none',
-              background: tab === 'login' ? 'rgba(20, 184, 166, 0.15)' : 'transparent',
-              color: tab === 'login' ? '#2dd4bf' : '#94a3b8',
-              fontWeight: tab === 'login' ? 700 : 500,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              borderBottom: tab === 'login' ? '3px solid #14b8a6' : '3px solid transparent',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
-          >
-            <LogIn size={16} />
-            Connexion
-          </button>
-          <button
-            type="button"
-            onClick={() => { setTab('register'); setErrorMsg(null); }}
-            style={{
-              padding: '13px',
-              border: 'none',
-              background: tab === 'register' ? 'rgba(20, 184, 166, 0.15)' : 'transparent',
-              color: tab === 'register' ? '#2dd4bf' : '#94a3b8',
-              fontWeight: tab === 'register' ? 700 : 500,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              borderBottom: tab === 'register' ? '3px solid #14b8a6' : '3px solid transparent',
-              transition: 'all 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
-          >
-            <User size={16} />
-            Créer un compte
-          </button>
+          <ShieldAlert size={20} color="#fb923c" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.8rem', color: '#fed7aa', lineHeight: 1.45 }}>
+            <strong>Accès Réglementé :</strong> La création de comptes (Médecin Chef, Directeur, Soignants) est <strong>strictement réservée au Super Administrateur</strong>. Rapprochez-vous de votre direction sanitaire pour recevoir vos accès.
+          </span>
         </div>
 
         {/* Card Body */}
@@ -298,112 +219,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
           )}
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* If Register: Nom Complet, Role & Structure */}
-            {tab === 'register' && (
-              <>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                    Nom et Prénoms du Praticien *
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Ex: Dr. Koné Souleymane"
-                      value={nomComplet}
-                      onChange={(e) => setNomComplet(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px 10px 36px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        fontSize: '0.9rem',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                      Fonction Médicale *
-                    </label>
-                    <select
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as UserRole)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: '#0f172a',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        fontSize: '0.85rem'
-                      }}
-                    >
-                      <option value="medecin">Médecin Généraliste</option>
-                      <option value="infirmier">Infirmier / Sage-Femme</option>
-                      <option value="agent_communautaire">Agent de Santé Communautaire</option>
-                      <option value="administrateur">Administrateur Sanitaire</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                      N° Matricule MSHP
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ex: MSHP-CI-48291"
-                      value={matricule}
-                      onChange={(e) => setMatricule(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        fontSize: '0.85rem',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                    Établissement Sanitaire d'Affectation *
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Building2 size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                    <select
-                      value={structureNom}
-                      onChange={(e) => setStructureNom(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px 10px 36px',
-                        background: '#0f172a',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '8px',
-                        color: '#ffffff',
-                        fontSize: '0.85rem'
-                      }}
-                    >
-                      <option value="Centre de Santé Urbain de Treichville (Abidjan)">CSU Treichville (Abidjan)</option>
-                      <option value="Formation Sanitaire Urbaine de Yopougon Attié">FSU Yopougon Attié (Abidjan)</option>
-                      <option value="Centre de Santé Rural de Bouaké-Koko">CSR Bouaké-Koko</option>
-                      <option value="Hôpital Général de San Pédro">Hôpital Général de San Pédro</option>
-                      <option value="Autre Établissement Sanitaire CI">Autre Établissement Sanitaire CI</option>
-                    </select>
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Email Field */}
             <div>
@@ -499,16 +314,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
               }}
             >
               {isLoading ? (
-                <span>Vérification en cours...</span>
-              ) : tab === 'login' ? (
+                <span>Vérification des accès...</span>
+              ) : (
                 <>
                   <span>Se connecter au Portail</span>
                   <ArrowRight size={18} />
-                </>
-              ) : (
-                <>
-                  <span>Créer mon compte professionnel</span>
-                  <ShieldCheck size={18} />
                 </>
               )}
             </button>

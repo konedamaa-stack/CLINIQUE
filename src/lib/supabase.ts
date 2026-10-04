@@ -134,7 +134,7 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
     user: {
       id: 'demo-dr-kone',
       email: 'dr.kone@sante.gouv.ci',
-      nomComplet: 'Dr. Koné Souleymane',
+      nomComplet: 'Dr. Koné Souleymane (Médecin Chef)',
       role: 'medecin',
       structureNom: 'Centre de Santé Urbain de Treichville (Abidjan)',
       numeroMatricule: 'MSHP-CI-48291'
@@ -157,7 +157,7 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
       id: 'demo-super-admin',
       email: 'directeur.mshp@sante.gouv.ci',
       nomComplet: 'Dr. Bakayoko Ibrahima (Directeur Général Santé)',
-      role: 'super_admin',
+      role: 'administrateur',
       structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
       numeroMatricule: 'MSHP-DIR-0001'
     }
@@ -174,6 +174,50 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
     }
   }
 };
+
+/**
+ * Récupère les comptes créés par le Super Administrateur
+ */
+export function getSuperAdminStaffAccounts(): Record<string, { password: string; user: AuthUser }> {
+  try {
+    const saved = localStorage.getItem('clinique_superadmin_staff_accounts');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error('Erreur lecture comptes praticiens:', e);
+  }
+  return {};
+}
+
+/**
+ * Enregistre ou met à jour un compte créé par le Super Administrateur
+ */
+export function saveSuperAdminStaffAccount(email: string, password: string, user: AuthUser): void {
+  const accounts = getSuperAdminStaffAccounts();
+  accounts[email.trim().toLowerCase()] = { password, user };
+  localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
+}
+
+/**
+ * Supprime un compte praticien
+ */
+export function deleteSuperAdminStaffAccount(email: string): void {
+  const accounts = getSuperAdminStaffAccounts();
+  delete accounts[email.trim().toLowerCase()];
+  localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
+}
+
+/**
+ * Retourne l'ensemble des comptes praticiens (démo + créés par Super Admin)
+ */
+export function getAllStaffAccounts(): Record<string, { password: string; user: AuthUser }> {
+  const custom = getSuperAdminStaffAccounts();
+  return {
+    ...DEMO_USERS,
+    ...custom
+  };
+}
 
 /**
  * Récupère l'utilisateur connecté via Supabase ou session locale
@@ -217,11 +261,12 @@ export async function getCurrentAuthUser(): Promise<AuthUser | null> {
 export async function signInWithEmail(email: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
   const cleanEmail = email.trim().toLowerCase();
 
-  // 1. Vérification rapide des comptes de démonstration (pour test immédiat sans internet/validation email)
-  if (DEMO_USERS[cleanEmail] && DEMO_USERS[cleanEmail].password === password) {
-    const demoUser = DEMO_USERS[cleanEmail].user;
-    localStorage.setItem('clinique_auth_user', JSON.stringify(demoUser));
-    return { user: demoUser, error: null };
+  // 1. Vérification des comptes autorisés (comptes démo + comptes créés par le Super Admin)
+  const allStaff = getAllStaffAccounts();
+  if (allStaff[cleanEmail] && allStaff[cleanEmail].password === password) {
+    const staffUser = allStaff[cleanEmail].user;
+    localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
+    return { user: staffUser, error: null };
   }
 
   // 2. Connexion via Supabase Auth

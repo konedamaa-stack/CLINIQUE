@@ -15,10 +15,21 @@ import {
   Award,
   Globe,
   CheckCircle2,
-  Copy
+  Copy,
+  UserPlus,
+  ShieldCheck,
+  Trash2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import type { ClinicStructure, ClinicType, ClinicStatus } from '../types/clinic';
 import type { FicheConsultation } from '../types/clinical';
+import type { AuthUser, UserRole } from '../types/auth';
+import { 
+  getAllStaffAccounts, 
+  saveSuperAdminStaffAccount, 
+  deleteSuperAdminStaffAccount 
+} from '../lib/supabase';
 
 interface SuperAdminViewProps {
   clinics: ClinicStructure[];
@@ -49,6 +60,21 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [editSubdomain, setEditSubdomain] = useState('');
   const [editCustomDomain, setEditCustomDomain] = useState('');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Staff Accounts Modal State
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [staffTab, setStaffTab] = useState<'create' | 'list'>('create');
+  const [staffAccounts, setStaffAccounts] = useState<Record<string, { password: string; user: AuthUser }>>(() => getAllStaffAccounts());
+
+  // New Staff form state
+  const [newStaffNom, setNewStaffNom] = useState('');
+  const [newStaffEmail, setNewStaffEmail] = useState('');
+  const [newStaffPassword, setNewStaffPassword] = useState('Password123!');
+  const [newStaffRole, setNewStaffRole] = useState<UserRole>('medecin');
+  const [newStaffStructure, setNewStaffStructure] = useState(clinics[0]?.nom || '');
+  const [newStaffMatricule, setNewStaffMatricule] = useState('');
+  const [staffFeedback, setStaffFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [showStaffPasswords, setShowStaffPasswords] = useState<Record<string, boolean>>({});
 
   // New Clinic Form State
   const [newNom, setNewNom] = useState('');
@@ -218,6 +244,49 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     document.body.removeChild(link);
   };
 
+  const handleCreateStaffAccount = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newStaffNom || !newStaffEmail || !newStaffPassword) {
+      setStaffFeedback({ type: 'error', message: 'Veuillez renseigner le nom, l\'email et le mot de passe.' });
+      return;
+    }
+
+    const cleanEmail = newStaffEmail.trim().toLowerCase();
+    const newUser: AuthUser = {
+      id: 'staff-' + Date.now(),
+      email: cleanEmail,
+      nomComplet: newStaffNom.trim(),
+      role: newStaffRole,
+      structureNom: newStaffStructure || clinics[0]?.nom || 'Établissement Sanitaire CI',
+      numeroMatricule: newStaffMatricule.trim() || `MSHP-CI-${Math.floor(10000 + Math.random() * 90000)}`
+    };
+
+    saveSuperAdminStaffAccount(cleanEmail, newStaffPassword, newUser);
+    setStaffAccounts(getAllStaffAccounts());
+    setStaffFeedback({ 
+      type: 'success', 
+      message: `Compte créé avec succès pour ${newUser.nomComplet} (${newUser.role === 'medecin' ? 'Médecin' : newUser.role === 'administrateur' ? 'Directeur / Admin' : newUser.role}) !` 
+    });
+
+    // Reset fields
+    setNewStaffNom('');
+    setNewStaffEmail('');
+    setNewStaffMatricule('');
+    setNewStaffPassword('Password123!');
+  };
+
+  const handleDeleteStaffAccount = (email: string) => {
+    if (email === 'konedamaa@gmail.com') {
+      alert('Impossible de révoquer le compte Super Administrateur National principal.');
+      return;
+    }
+    if (window.confirm(`Confirmez-vous la révocation et la suppression des accès pour le compte ${email} ?`)) {
+      deleteSuperAdminStaffAccount(email);
+      setStaffAccounts(getAllStaffAccounts());
+      setStaffFeedback({ type: 'success', message: `Compte ${email} révoqué et supprimé du réseau.` });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Super Admin Executive Top Banner */}
@@ -301,6 +370,28 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           >
             <PlusCircle size={18} />
             Ajouter un Établissement
+          </button>
+
+          <button
+            onClick={() => { setIsStaffModalOpen(true); setStaffFeedback(null); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+              border: 'none',
+              color: '#ffffff',
+              padding: '11px 20px',
+              borderRadius: '10px',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.4)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <UserPlus size={18} />
+            Gérer les Comptes Praticiens
           </button>
         </div>
       </div>
@@ -1253,6 +1344,438 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: GESTION ET CRÉATION DES COMPTES UTILISATEURS (RÉSERVÉ SUPER ADMIN) */}
+      {isStaffModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 1300,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '740px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #c2410c 100%)',
+              color: '#ffffff',
+              padding: '20px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'rgba(234, 88, 12, 0.25)', padding: '8px', borderRadius: '10px' }}>
+                  <ShieldCheck size={24} color="#fb923c" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>
+                    Gestion des Accès & Comptes Praticiens
+                  </h3>
+                  <p style={{ margin: '3px 0 0 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                    Attribution exclusive par le Super Administrateur National MSHP-CMU
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsStaffModalOpen(false)}
+                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Navigation Tabs */}
+            <div style={{
+              display: 'flex',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              padding: '0 24px'
+            }}>
+              <button
+                type="button"
+                onClick={() => { setStaffTab('create'); setStaffFeedback(null); }}
+                style={{
+                  padding: '14px 18px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: staffTab === 'create' ? '#ea580c' : '#64748b',
+                  fontWeight: staffTab === 'create' ? 700 : 500,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  borderBottom: staffTab === 'create' ? '3px solid #ea580c' : '3px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <UserPlus size={16} />
+                Créer un Nouveau Compte Praticien
+              </button>
+              <button
+                type="button"
+                onClick={() => { setStaffTab('list'); setStaffFeedback(null); }}
+                style={{
+                  padding: '14px 18px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: staffTab === 'list' ? '#ea580c' : '#64748b',
+                  fontWeight: staffTab === 'list' ? 700 : 500,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  borderBottom: staffTab === 'list' ? '3px solid #ea580c' : '3px solid transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <Users size={16} />
+                Comptes Actifs ({Object.keys(staffAccounts).length})
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {staffFeedback && (
+                <div style={{
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  marginBottom: '16px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  background: staffFeedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
+                  border: `1px solid ${staffFeedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+                  color: staffFeedback.type === 'success' ? '#166534' : '#991b1b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  {staffFeedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
+                  <span>{staffFeedback.message}</span>
+                </div>
+              )}
+
+              {staffTab === 'create' ? (
+                <form onSubmit={handleCreateStaffAccount} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '12px 16px' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#9a3412', lineHeight: 1.4, display: 'block' }}>
+                      ℹ️ <strong>Règle de sécurité nationale :</strong> Les soignants ne peuvent pas s'inscrire eux-mêmes. Le Super Administrateur crée ici les identifiants pour les Directeurs, Médecins Chefs, Infirmiers et Agents Communautaires.
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        Nom et Prénoms du Praticien *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ex: Dr. Kouamé Jean"
+                        value={newStaffNom}
+                        onChange={(e) => setNewStaffNom(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        Fonction Médicale / Rôle *
+                      </label>
+                      <select
+                        value={newStaffRole}
+                        onChange={(e) => setNewStaffRole(e.target.value as UserRole)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          background: '#ffffff',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="medecin">🩺 Médecin Chef / Médecin Généraliste</option>
+                        <option value="administrateur">🏢 Directeur de Clinique / Administrateur</option>
+                        <option value="infirmier">💉 Infirmier Major / Sage-Femme</option>
+                        <option value="agent_communautaire">🤝 Agent de Santé Communautaire</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        Établissement Sanitaire de Rattachement *
+                      </label>
+                      <select
+                        value={newStaffStructure}
+                        onChange={(e) => setNewStaffStructure(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          background: '#ffffff',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        {clinics.map((c) => (
+                          <option key={c.id} value={c.nom}>{c.nom} ({c.typeStructure})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        N° Matricule MSHP (Optionnel)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ex: MSHP-CI-52910"
+                        value={newStaffMatricule}
+                        onChange={(e) => setNewStaffMatricule(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                        Email Professionnel (Identifiant de Connexion) *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="ex: dr.kouame@sante.gouv.ci"
+                        value={newStaffEmail}
+                        onChange={(e) => setNewStaffEmail(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>
+                          Mot de Passe Initial *
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setNewStaffPassword(`CI-${Math.floor(1000 + Math.random() * 9000)}@Sante`)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#ea580c',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ⚡ Générer automatique
+                        </button>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={newStaffPassword}
+                        onChange={(e) => setNewStaffPassword(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.9rem',
+                          fontFamily: 'monospace',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsStaffModalOpen(false)}
+                      style={{
+                        padding: '10px 18px',
+                        background: '#f1f5f9',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '10px 22px',
+                        background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(234, 88, 12, 0.3)'
+                      }}
+                    >
+                      Valider & Activer le Compte Praticien
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left', borderBottom: '2px solid #e2e8f0' }}>
+                          <th style={{ padding: '10px 12px' }}>Praticien</th>
+                          <th style={{ padding: '10px 12px' }}>Rôle</th>
+                          <th style={{ padding: '10px 12px' }}>Établissement</th>
+                          <th style={{ padding: '10px 12px' }}>Email & Mot de passe</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(staffAccounts).map(([email, data]) => {
+                          const isMainSuperAdmin = email === 'konedamaa@gmail.com';
+                          const isShowingPassword = !!showStaffPasswords[email];
+                          return (
+                            <tr key={email} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '12px' }}>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{data.user.nomComplet}</div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                  Matricule : {data.user.numeroMatricule || 'Non renseigné'}
+                                </div>
+                              </td>
+
+                              <td style={{ padding: '12px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 10px',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700,
+                                  background: data.user.role === 'super_admin' ? '#ffedd5' : data.user.role === 'administrateur' ? '#f3e8ff' : data.user.role === 'medecin' ? '#e0f2fe' : '#dcfce7',
+                                  color: data.user.role === 'super_admin' ? '#c2410c' : data.user.role === 'administrateur' ? '#7e22ce' : data.user.role === 'medecin' ? '#0369a1' : '#15803d'
+                                }}>
+                                  {data.user.role === 'super_admin' ? '👑 Super Admin' : data.user.role === 'administrateur' ? '🏢 Directeur' : data.user.role === 'medecin' ? '🩺 Médecin Chef' : data.user.role === 'infirmier' ? '💉 Infirmier' : '🤝 Communautaire'}
+                                </span>
+                              </td>
+
+                              <td style={{ padding: '12px', color: '#334155', fontSize: '0.8rem' }}>
+                                {data.user.structureNom}
+                              </td>
+
+                              <td style={{ padding: '12px' }}>
+                                <div style={{ fontFamily: 'monospace', color: '#0f172a', fontWeight: 600 }}>{data.user.email}</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                  <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>
+                                    {isShowingPassword ? data.password : '••••••••••••'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowStaffPasswords(prev => ({ ...prev, [email]: !prev[email] }))}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0 2px' }}
+                                    title={isShowingPassword ? 'Masquer' : 'Afficher'}
+                                  >
+                                    {isShowingPassword ? <EyeOff size={13} /> : <Eye size={13} />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(`Email: ${data.user.email}\nMot de passe: ${data.password}`);
+                                      setStaffFeedback({ type: 'success', message: `Identifiants de ${data.user.nomComplet} copiés dans le presse-papier !` });
+                                    }}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0284c7', padding: '0 2px' }}
+                                    title="Copier les identifiants"
+                                  >
+                                    <Copy size={13} />
+                                  </button>
+                                </div>
+                              </td>
+
+                              <td style={{ padding: '12px', textAlign: 'center' }}>
+                                {!isMainSuperAdmin ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteStaffAccount(email)}
+                                    style={{
+                                      padding: '6px 10px',
+                                      background: '#fef2f2',
+                                      border: '1px solid #fecaca',
+                                      color: '#ef4444',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.78rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                    title="Révoquer ce compte"
+                                  >
+                                    <Trash2 size={13} />
+                                    Révoquer
+                                  </button>
+                                ) : (
+                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
+                                    Super Admin
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
