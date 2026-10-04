@@ -535,7 +535,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
               <button
                 type="button"
-                onClick={() => handleQuickDemo('directeur.mshp@sante.gouv.ci')}
+                onClick={() => handleQuickDemo('konedamaa@gmail.com')}
                 style={{
                   background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%)',
                   border: '1px solid rgba(234, 88, 12, 0.4)',
@@ -551,7 +551,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.4)')}
               >
                 <div style={{ fontWeight: 700, color: '#fb923c' }}>👑 Super Admin</div>
-                <div style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>DG Santé</div>
+                <div style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>Adama Koné</div>
               </button>
 
               <button

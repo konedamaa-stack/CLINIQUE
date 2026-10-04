@@ -54,7 +54,15 @@ export const App: React.FC = () => {
     return INITIAL_MOCK_FICHES;
   });
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin'>(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'superadmin' || hash === 'admin') return 'superadmin';
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'superadmin') return 'superadmin';
+    }
+    return 'dashboard';
+  });
   const [selectedSite, setSelectedSite] = useState<string>('Centre de Santé Urbain de Treichville (Abidjan)');
   const [editingFiche, setEditingFiche] = useState<FicheConsultation | null>(null);
   const [previewFiche, setPreviewFiche] = useState<FicheConsultation | null>(null);
@@ -68,6 +76,15 @@ export const App: React.FC = () => {
     localStorage.setItem('clinique_structures_ci', JSON.stringify(clinics));
   }, [clinics]);
 
+  // Synchronisation de l'URL hash avec l'onglet courant
+  useEffect(() => {
+    if (currentTab === 'superadmin') {
+      window.location.hash = 'superadmin';
+    } else if (window.location.hash === '#superadmin') {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, [currentTab]);
+
   // Check auth on mount
   useEffect(() => {
     getCurrentAuthUser().then((user) => {
@@ -75,6 +92,9 @@ export const App: React.FC = () => {
         setCurrentUser(user);
         if (user.structureNom) {
           setSelectedSite(user.structureNom);
+        }
+        if (user.role === 'super_admin' && (window.location.hash === '#superadmin' || !window.location.hash)) {
+          setCurrentTab('superadmin');
         }
       }
       setIsAuthLoading(false);
@@ -106,7 +126,11 @@ export const App: React.FC = () => {
     if (user.structureNom) {
       setSelectedSite(user.structureNom);
     }
-    showToast(`✓ Connecté : ${user.nomComplet} (${user.role.replace('_', ' ')})`);
+    // Basculer automatiquement sur le tableau de bord Super Admin
+    if (user.role === 'super_admin' || user.email === 'konedamaa@gmail.com') {
+      setCurrentTab('superadmin');
+    }
+    showToast(`👑 Bienvenue ${user.nomComplet}`);
   };
 
   const handleLogout = async () => {

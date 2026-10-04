@@ -118,6 +118,17 @@ import type { AuthUser, UserRole } from '../types/auth';
 
 // Comptes de démonstration préconfigurés pour les structures sanitaires de Côte d'Ivoire
 export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = {
+  'konedamaa@gmail.com': {
+    password: 'madouu1966@',
+    user: {
+      id: 'super-admin-adama-kone',
+      email: 'konedamaa@gmail.com',
+      nomComplet: 'Adama Koné (Super Administrateur Réseau)',
+      role: 'super_admin',
+      structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
+      numeroMatricule: 'MSHP-SUPER-ADMIN-01'
+    }
+  },
   'dr.kone@sante.gouv.ci': {
     password: 'Password123!',
     user: {
