@@ -11,7 +11,9 @@ import {
   Building2, 
   UserCheck, 
   Stethoscope, 
-  HeartHandshake
+  HeartHandshake,
+  Edit2,
+  KeyRound
 } from 'lucide-react';
 import type { AuthUser, UserRole } from '../types/auth';
 import { 
@@ -42,6 +44,12 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Edit Account state
+  const [editingAccount, setEditingAccount] = useState<{ email: string; user: AuthUser; password: string } | null>(null);
+  const [editPassNom, setEditPassNom] = useState('');
+  const [editPassPassword, setEditPassPassword] = useState('');
+  const [showEditPass, setShowEditPass] = useState(false);
 
   // Filter employees belonging to this clinic
   // Also include accounts matching this clinic
@@ -101,6 +109,33 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
     navigator.clipboard.writeText(`Identifiants Établissement : ${selectedSite}\nNom: ${name}\nLogin (Email): ${email}\nMot de passe: ${pass}`);
     setCopiedKey(email);
     setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  const handleOpenEditAccount = (email: string, user: AuthUser, pass: string) => {
+    setEditingAccount({ email, user, password: pass });
+    setEditPassNom(user.nomComplet);
+    setEditPassPassword(pass);
+    setShowEditPass(false);
+  };
+
+  const handleSaveAccountPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccount) return;
+    const cleanPassword = editPassPassword.trim() || 'Password123!';
+    const cleanNom = editPassNom.trim() || editingAccount.user.nomComplet;
+
+    const updatedUser: AuthUser = {
+      ...editingAccount.user,
+      nomComplet: cleanNom
+    };
+
+    saveSuperAdminStaffAccount(editingAccount.email, cleanPassword, updatedUser);
+    setStaffAccounts(getAllStaffAccounts());
+    setFeedback({
+      type: 'success',
+      message: `Identifiants et mot de passe mis à jour avec succès pour "${cleanNom}" !`
+    });
+    setEditingAccount(null);
   };
 
   // KPIs
@@ -367,32 +402,55 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
                       </td>
 
                       <td style={{ padding: '14px', textAlign: 'center' }}>
-                        {!isDirector && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
                           <button
                             type="button"
-                            onClick={() => handleDeleteEmployee(email, data.user.nomComplet)}
+                            onClick={() => handleOpenEditAccount(email, data.user, data.password)}
                             style={{
-                              padding: '6px 12px',
-                              background: '#fef2f2',
-                              border: '1px solid #fecaca',
-                              color: '#ef4444',
+                              padding: '5px 10px',
+                              background: '#eff6ff',
+                              border: '1px solid #bfdbfe',
+                              color: '#1d4ed8',
                               borderRadius: '6px',
                               cursor: 'pointer',
                               fontSize: '0.78rem',
+                              fontWeight: 600,
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px'
                             }}
+                            title="Modifier le mot de passe ou le nom"
                           >
-                            <Trash2 size={13} />
-                            Révoquer
+                            <Edit2 size={13} />
+                            Modifier
                           </button>
-                        )}
-                        {isDirector && (
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600 }}>
-                            Directeur
-                          </span>
-                        )}
+
+                          {!isDirector ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEmployee(email, data.user.nomComplet)}
+                              style={{
+                                padding: '5px 10px',
+                                background: '#fef2f2',
+                                border: '1px solid #fecaca',
+                                color: '#ef4444',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.78rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Trash2 size={13} />
+                              Révoquer
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '3px 8px', borderRadius: '4px' }}>
+                              Directeur
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -598,6 +656,184 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
                   }}
                 >
                   Enregistrer & Activer le Soignant
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Modifier Mot de Passe / Nom de l'employé ou Directeur */}
+      {editingAccount && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 1400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '500px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #0284c7 100%)',
+              color: '#ffffff',
+              padding: '18px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <KeyRound size={20} color="#38bdf8" />
+                  Modifier les Identifiants
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#bae6fd' }}>
+                  Compte : {editingAccount.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingAccount(null)}
+                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAccountPassword} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Nom Complet
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPassNom}
+                  onChange={(e) => setEditPassNom(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Identifiant de connexion (Email / Login)
+                </label>
+                <input
+                  type="text"
+                  disabled
+                  value={editingAccount.email}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    background: '#f8fafc',
+                    color: '#64748b',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box',
+                    cursor: 'not-allowed'
+                  }}
+                />
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '0.83rem', fontWeight: 700, color: '#334155' }}>
+                    Nouveau Mot de Passe *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setEditPassPassword(`Pass-${Math.floor(1000 + Math.random() * 9000)}@CI`)}
+                    style={{ background: 'none', border: 'none', color: '#0284c7', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    ⚡ Générer nouveau
+                  </button>
+                </div>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showEditPass ? 'text' : 'password'}
+                    required
+                    value={editPassPassword}
+                    onChange={(e) => setEditPassPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 42px 10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPass(!showEditPass)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#64748b'
+                    }}
+                  >
+                    {showEditPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingAccount(null)}
+                  style={{
+                    padding: '10px 16px',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 20px',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                  }}
+                >
+                  Enregistrer les Modifications
                 </button>
               </div>
             </form>

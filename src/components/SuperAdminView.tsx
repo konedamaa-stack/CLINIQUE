@@ -20,7 +20,9 @@ import {
   ShieldCheck,
   Trash2,
   Eye,
-  EyeOff
+  EyeOff,
+  Edit2,
+  KeyRound
 } from 'lucide-react';
 import type { ClinicStructure, ClinicType, ClinicStatus } from '../types/clinic';
 import type { FicheConsultation } from '../types/clinical';
@@ -55,6 +57,11 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [configClinic, setConfigClinic] = useState<ClinicStructure | null>(null);
   const [domainModalClinic, setDomainModalClinic] = useState<ClinicStructure | null>(null);
+  const [editDirectorClinic, setEditDirectorClinic] = useState<ClinicStructure | null>(null);
+  const [editDirectorNom, setEditDirectorNom] = useState('');
+  const [editDirectorLogin, setEditDirectorLogin] = useState('');
+  const [editDirectorPassword, setEditDirectorPassword] = useState('');
+  const [showEditDirectorPass, setShowEditDirectorPass] = useState(false);
 
   // Domain edit state inside modal
   const [editSubdomain, setEditSubdomain] = useState('');
@@ -205,6 +212,52 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     };
     onUpdateClinic(updated);
     setDomainModalClinic(null);
+  };
+
+  const handleOpenEditDirector = (clinic: ClinicStructure) => {
+    setEditDirectorClinic(clinic);
+    setEditDirectorNom(clinic.directeurNom || '');
+    setEditDirectorLogin(clinic.email || '');
+    setEditDirectorPassword(clinic.directeurPassword || 'Password123!');
+    setShowEditDirectorPass(false);
+  };
+
+  const handleSaveDirectorChanges = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDirectorClinic) return;
+    const cleanNom = editDirectorNom.trim() || editDirectorClinic.directeurNom;
+    const cleanLogin = editDirectorLogin.trim().toLowerCase();
+    const cleanPassword = editDirectorPassword.trim() || 'Password123!';
+
+    if (!cleanLogin) {
+      alert("L'identifiant / nom de connexion ne peut pas être vide.");
+      return;
+    }
+
+    const updated: ClinicStructure = {
+      ...editDirectorClinic,
+      directeurNom: cleanNom,
+      email: cleanLogin,
+      directeurPassword: cleanPassword
+    };
+    onUpdateClinic(updated);
+
+    const directorUser: AuthUser = {
+      id: 'director-' + Date.now(),
+      email: cleanLogin,
+      nomComplet: cleanNom,
+      role: 'administrateur',
+      structureNom: updated.nom,
+      numeroMatricule: `DIR-MSHP-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    saveSuperAdminStaffAccount(cleanLogin, cleanPassword, directorUser);
+    setStaffAccounts(getAllStaffAccounts());
+
+    setStaffFeedback({
+      type: 'success',
+      message: `Identifiants du Directeur mis à jour pour "${updated.nom}". Nouveau login : ${cleanLogin}`
+    });
+    setEditDirectorClinic(null);
   };
 
   const handleCopyClipboard = (text: string) => {
@@ -658,7 +711,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                       <div style={{ color: '#0369a1', fontSize: '0.78rem', marginTop: '2px', fontFamily: 'monospace', fontWeight: 600 }}>
                         {c.email}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.72rem', background: '#ffedd5', color: '#c2410c', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
                           Pass: {c.directeurPassword || 'Password123!'}
                         </span>
@@ -672,6 +725,27 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                           title="Copier les identifiants du Directeur"
                         >
                           <Copy size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditDirector(c)}
+                          style={{
+                            background: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            color: '#1d4ed8',
+                            cursor: 'pointer',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Modifier le nom, le login ou le mot de passe du Directeur"
+                        >
+                          <Edit2 size={11} />
+                          <span>Modifier</span>
                         </button>
                       </div>
                     </td>
@@ -1847,6 +1921,178 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Modifier Identifiants du Directeur */}
+      {editDirectorClinic && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 1400,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '520px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #0369a1 100%)',
+              color: '#ffffff',
+              padding: '18px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <KeyRound size={20} color="#38bdf8" />
+                  Modifier Accès du Directeur
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#bae6fd' }}>
+                  Établissement : {editDirectorClinic.nom}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditDirectorClinic(null)}
+                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDirectorChanges} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Nom & Titre du Directeur / Médecin Chef *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editDirectorNom}
+                  onChange={(e) => setEditDirectorNom(e.target.value)}
+                  placeholder="ex: Dr. Koné Souleymane (Médecin Chef)"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Login de Connexion (Nom d'utilisateur ou Email) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editDirectorLogin}
+                  onChange={(e) => setEditDirectorLogin(e.target.value)}
+                  placeholder="ex: kone, souleymane, ou directeur@sante.gouv.ci"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  💡 Peut être un nom simple (ex: <strong>kone</strong>, <strong>adama</strong>) ou une adresse email.
+                </span>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  Nouveau Mot de Passe *
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showEditDirectorPass ? 'text' : 'password'}
+                    required
+                    value={editDirectorPassword}
+                    onChange={(e) => setEditDirectorPassword(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 42px 10px 14px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      fontFamily: 'monospace',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditDirectorPass(!showEditDirectorPass)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#64748b'
+                    }}
+                  >
+                    {showEditDirectorPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditDirectorClinic(null)}
+                  style={{
+                    padding: '10px 18px',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '10px 22px',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                  }}
+                >
+                  Enregistrer les Nouveaux Identifiants
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
