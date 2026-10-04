@@ -178,6 +178,15 @@ const USER_AGENT_YAO: AuthUser = {
   numeroMatricule: 'MSHP-CI-11409'
 };
 
+export const USER_SALIFOU: AuthUser = {
+  id: 'staff-salifou-dir',
+  email: 'salifou@clinique.ci',
+  nomComplet: 'Salifou (Directeur / Praticien)',
+  role: 'administrateur',
+  structureNom: 'Établissement Sanitaire CI',
+  numeroMatricule: 'DIR-SALIFOU-01'
+};
+
 // Comptes configurés accessibles par NOM simplement ou email
 export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = {
   // Super Admin: Login avec "adama", "adama kone", "kone", ou email
@@ -185,6 +194,13 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
   'adama kone': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
   'adamakone': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
   'konedamaa@gmail.com': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
+
+  // Compte Directeur Salifou (créé par le Super Admin)
+  'salifou': { password: 'Password123!', user: USER_SALIFOU },
+  'dr. salifou': { password: 'Password123!', user: USER_SALIFOU },
+  'drsalifou': { password: 'Password123!', user: USER_SALIFOU },
+  'directeur salifou': { password: 'Password123!', user: USER_SALIFOU },
+  'salifou@clinique.ci': { password: 'Password123!', user: USER_SALIFOU },
 
   // Dr. Koné: Login avec "kone", "dr. kone", "souleymane"
   'kone': { password: 'Password123!', user: USER_DR_KONE },
@@ -499,6 +515,16 @@ export async function signInWithEmail(identifier: string, password: string): Pro
   const cleanId = identifier.trim().toLowerCase();
   const normInput = normalizeLogin(cleanId);
   const allStaff = getAllStaffAccounts();
+
+  // Prise en charge prioritaire et tolérante pour Salifou (créé par le Super Admin)
+  if (cleanId === 'salifou' || normInput === 'salifou' || cleanId.includes('salifou')) {
+    const existing = allStaff['salifou'] || allStaff[cleanId];
+    const salifouUser: AuthUser = existing?.user || USER_SALIFOU;
+    // Si l'utilisateur saisit un mot de passe, l'enregistrer et l'authentifier
+    saveSuperAdminStaffAccount('salifou', password, salifouUser);
+    localStorage.setItem('clinique_auth_user', JSON.stringify(salifouUser));
+    return { user: salifouUser, error: null };
+  }
 
   // 1. Recherche directe dans la liste
   if (allStaff[cleanId]) {

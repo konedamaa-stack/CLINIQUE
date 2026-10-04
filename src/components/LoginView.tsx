@@ -10,7 +10,8 @@ import {
   Sparkles, 
   BadgeAlert, 
   CheckCircle2, 
-  ShieldAlert 
+  ShieldAlert,
+  RefreshCw 
 } from 'lucide-react';
 import type { AuthUser } from '../types/auth';
 import { signInWithEmail, getAllStaffAccounts } from '../lib/supabase';
@@ -31,6 +32,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const handleForceRefresh = () => {
+    try {
+      localStorage.removeItem('clinique_superadmin_staff_accounts');
+    } catch {}
+    window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,12 +69,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const handleQuickDemo = (demoKey: string, cleanName: string) => {
     const allAccounts = getAllStaffAccounts();
     const demo = allAccounts[demoKey.toLowerCase()];
-    if (demo) {
-      setEmail(cleanName);
-      setPassword(demo.password);
-      setErrorMsg(null);
-      setSuccessMsg(`Connexion prête pour : ${cleanName}`);
-    }
+    setEmail(cleanName);
+    setPassword(demo?.password || 'Password123!');
+    setErrorMsg(null);
+    setSuccessMsg(`Connexion prête pour : ${cleanName}`);
   };
 
   return (
@@ -190,16 +196,37 @@ export const LoginView: React.FC<LoginViewProps> = ({
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1px solid rgba(239, 68, 68, 0.4)',
               color: '#fca5a5',
-              padding: '10px 14px',
+              padding: '12px 14px',
               borderRadius: '8px',
               fontSize: '0.85rem',
-              marginBottom: '16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
+              marginBottom: '16px'
             }}>
-              <BadgeAlert size={18} color="#ef4444" style={{ flexShrink: 0 }} />
-              <span>{errorMsg}</span>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                <BadgeAlert size={18} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>{errorMsg}</div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={handleForceRefresh}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    color: '#ffffff',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <RefreshCw size={13} />
+                  🔄 Cliquer ici pour Actualiser l'application
+                </button>
+              </div>
             </div>
           )}
 
@@ -348,7 +375,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '6px' }}>
               <button
                 type="button"
                 onClick={() => handleQuickDemo('adama', 'Adama Koné')}
@@ -368,6 +395,27 @@ export const LoginView: React.FC<LoginViewProps> = ({
               >
                 <div style={{ fontWeight: 700, color: '#fb923c' }}>👑 Super Admin</div>
                 <div style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>Adama Koné</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('salifou', 'salifou')}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(13, 148, 136, 0.3) 100%)',
+                  border: '1px solid #14b8a6',
+                  borderRadius: '8px',
+                  padding: '8px 4px',
+                  color: '#5eead4',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '0.72rem',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#2dd4bf')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#14b8a6')}
+              >
+                <div style={{ fontWeight: 700, color: '#2dd4bf' }}>👔 Directeur</div>
+                <div style={{ fontSize: '0.65rem', color: '#ffffff' }}>Salifou</div>
               </button>
 
               <button
@@ -431,6 +479,38 @@ export const LoginView: React.FC<LoginViewProps> = ({
               >
                 <div style={{ fontWeight: 600, color: '#34d399' }}>Agent Yao</div>
                 <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Commun.</div>
+              </button>
+            </div>
+
+            {/* Bouton explicite pour actualiser */}
+            <div style={{ textAlign: 'center', marginTop: '14px' }}>
+              <button
+                type="button"
+                onClick={handleForceRefresh}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  color: '#94a3b8',
+                  borderRadius: '20px',
+                  padding: '6px 14px',
+                  fontSize: '0.73rem',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.borderColor = '#14b8a6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#94a3b8';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                }}
+              >
+                <RefreshCw size={12} />
+                <span>Actualiser la page & synchroniser</span>
               </button>
             </div>
 
