@@ -140,6 +140,17 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
       numeroMatricule: 'MSHP-CI-91024'
     }
   },
+  'directeur.mshp@sante.gouv.ci': {
+    password: 'Password123!',
+    user: {
+      id: 'demo-super-admin',
+      email: 'directeur.mshp@sante.gouv.ci',
+      nomComplet: 'Dr. Bakayoko Ibrahima (Directeur Général Santé)',
+      role: 'super_admin',
+      structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
+      numeroMatricule: 'MSHP-DIR-0001'
+    }
+  },
   'agent.yao@sante.gouv.ci': {
     password: 'Password123!',
     user: {

@@ -15,8 +15,8 @@ import {
 import type { AuthUser } from '../types/auth';
 
 interface HeaderProps {
-  currentTab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan';
-  onSelectTab: (tab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan') => void;
+  currentTab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin';
+  onSelectTab: (tab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin') => void;
   selectedSite: string;
   onSelectSite: (site: string) => void;
   casPresumesTBCount: number;
@@ -24,6 +24,7 @@ interface HeaderProps {
   currentUser?: AuthUser | null;
   onLogout?: () => void;
   onShowLoginModal?: () => void;
+  availableClinics?: { id: string; nom: string }[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -35,7 +36,8 @@ export const Header: React.FC<HeaderProps> = ({
   isSupabaseConnected = false,
   currentUser = null,
   onLogout,
-  onShowLoginModal
+  onShowLoginModal,
+  availableClinics = []
 }) => {
   return (
     <header style={{
@@ -136,10 +138,20 @@ export const Header: React.FC<HeaderProps> = ({
                 cursor: 'pointer'
               }}
             >
-              <option value="Centre de Santé Urbain de Treichville (Abidjan)" style={{ color: '#0f172a' }}>CSU Treichville (Abidjan)</option>
-              <option value="Formation Sanitaire Urbaine de Yopougon Attié" style={{ color: '#0f172a' }}>FSU Yopougon Attié (Abidjan)</option>
-              <option value="Centre de Santé Rural de Bouaké-Koko" style={{ color: '#0f172a' }}>CSR Bouaké-Koko</option>
-              <option value="Hôpital Général de San Pédro" style={{ color: '#0f172a' }}>HG San Pédro</option>
+              {availableClinics && availableClinics.length > 0 ? (
+                availableClinics.map((cl) => (
+                  <option key={cl.id} value={cl.nom} style={{ color: '#0f172a' }}>
+                    {cl.nom}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="Centre de Santé Urbain de Treichville (Abidjan)" style={{ color: '#0f172a' }}>CSU Treichville (Abidjan)</option>
+                  <option value="Formation Sanitaire Urbaine de Yopougon Attié" style={{ color: '#0f172a' }}>FSU Yopougon Attié (Abidjan)</option>
+                  <option value="Centre de Santé Rural de Bouaké-Koko" style={{ color: '#0f172a' }}>CSR Bouaké-Koko</option>
+                  <option value="Hôpital Général de San Pédro" style={{ color: '#0f172a' }}>HG San Pédro</option>
+                </>
+              )}
             </select>
           </div>
         </div>
@@ -420,6 +432,31 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <ShieldAlert size={17} />
           Plan d'Implémentation 2026
+        </button>
+
+        {/* TAB SUPER ADMIN */}
+        <button
+          id="nav-tab-superadmin"
+          onClick={() => onSelectTab('superadmin')}
+          style={{
+            padding: '10px 16px',
+            background: currentTab === 'superadmin' ? 'rgba(234, 88, 12, 0.25)' : 'transparent',
+            border: 'none',
+            borderBottom: currentTab === 'superadmin' ? '3px solid #f97316' : '3px solid transparent',
+            color: currentTab === 'superadmin' ? '#fdba74' : '#cbd5e1',
+            fontWeight: currentTab === 'superadmin' ? 800 : 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderRadius: '6px 6px 0 0',
+            transition: 'all 0.15s ease',
+            marginLeft: 'auto'
+          }}
+        >
+          <Building2 size={17} color={currentTab === 'superadmin' ? '#fb923c' : '#5eead4'} />
+          <span>👑 Super Admin (Contrôle Cliniques)</span>
         </button>
       </div>
     </header>

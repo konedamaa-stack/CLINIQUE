@@ -532,7 +532,28 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={() => handleQuickDemo('directeur.mshp@sante.gouv.ci')}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%)',
+                  border: '1px solid rgba(234, 88, 12, 0.4)',
+                  borderRadius: '8px',
+                  padding: '8px 4px',
+                  color: '#fdba74',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  fontSize: '0.72rem',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#ea580c')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(234, 88, 12, 0.4)')}
+              >
+                <div style={{ fontWeight: 700, color: '#fb923c' }}>👑 Super Admin</div>
+                <div style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>DG Santé</div>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleQuickDemo('dr.kone@sante.gouv.ci')}
@@ -540,18 +561,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '8px',
-                  padding: '8px 6px',
+                  padding: '8px 4px',
                   color: '#cbd5e1',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#14b8a6')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
               >
                 <div style={{ fontWeight: 600, color: '#38bdf8' }}>Dr. Koné</div>
-                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Médecin</div>
+                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Médecin</div>
               </button>
 
               <button
@@ -561,18 +582,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '8px',
-                  padding: '8px 6px',
+                  padding: '8px 4px',
                   color: '#cbd5e1',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#14b8a6')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
               >
                 <div style={{ fontWeight: 600, color: '#a78bfa' }}>Inf. Amlan</div>
-                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Infirmière</div>
+                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Infirmière</div>
               </button>
 
               <button
@@ -582,18 +603,18 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
                   borderRadius: '8px',
-                  padding: '8px 6px',
+                  padding: '8px 4px',
                   color: '#cbd5e1',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  fontSize: '0.75rem',
+                  fontSize: '0.72rem',
                   transition: 'all 0.15s ease'
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#14b8a6')}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)')}
               >
                 <div style={{ fontWeight: 600, color: '#34d399' }}>Agent Yao</div>
-                <div style={{ fontSize: '0.68rem', color: '#64748b' }}>Communautaire</div>
+                <div style={{ fontSize: '0.65rem', color: '#64748b' }}>Commun.</div>
               </button>
             </div>
 

@@ -1,4 +1,4 @@
-export type UserRole = 'medecin' | 'infirmier' | 'agent_communautaire' | 'administrateur';
+export type UserRole = 'super_admin' | 'administrateur' | 'medecin' | 'infirmier' | 'agent_communautaire';
 
 export interface AuthUser {
   id: string;

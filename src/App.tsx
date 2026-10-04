@@ -8,9 +8,12 @@ import { ClinicalProtocols } from './components/ClinicalProtocols';
 import { ImplementationPlanView } from './components/ImplementationPlanView';
 import { AppointmentsView } from './components/AppointmentsView';
 import { LoginView } from './components/LoginView';
+import { SuperAdminView } from './components/SuperAdminView';
 import type { FicheConsultation, TypePopulation } from './types/clinical';
 import type { AuthUser } from './types/auth';
+import type { ClinicStructure } from './types/clinic';
 import { INITIAL_MOCK_FICHES, calculateKPIsFromFiches } from './data/mockPatients';
+import { INITIAL_CLINICS } from './data/mockClinics';
 import {
   isSupabaseConfigured,
   fetchConsultationsFromSupabase,
@@ -26,6 +29,19 @@ export const App: React.FC = () => {
   const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
   const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
 
+  // Établissements sanitaires supervisés par le Super Admin
+  const [clinics, setClinics] = useState<ClinicStructure[]>(() => {
+    const saved = localStorage.getItem('clinique_structures_ci');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse saved clinics:', e);
+      }
+    }
+    return INITIAL_CLINICS;
+  });
+
   const [fiches, setFiches] = useState<FicheConsultation[]>(() => {
     const saved = localStorage.getItem('clinique_consultations_ci');
     if (saved) {
@@ -38,7 +54,7 @@ export const App: React.FC = () => {
     return INITIAL_MOCK_FICHES;
   });
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan'>('dashboard');
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin'>('dashboard');
   const [selectedSite, setSelectedSite] = useState<string>('Centre de Santé Urbain de Treichville (Abidjan)');
   const [editingFiche, setEditingFiche] = useState<FicheConsultation | null>(null);
   const [previewFiche, setPreviewFiche] = useState<FicheConsultation | null>(null);
@@ -47,6 +63,10 @@ export const App: React.FC = () => {
   // Registry filter pre-selection from dashboard clicks
   const [registryFilterTB, setRegistryFilterTB] = useState<boolean>(false);
   const [registryFilterPop, setRegistryFilterPop] = useState<TypePopulation | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('clinique_structures_ci', JSON.stringify(clinics));
+  }, [clinics]);
 
   // Check auth on mount
   useEffect(() => {
@@ -94,6 +114,22 @@ export const App: React.FC = () => {
     setCurrentUser(null);
     setIsGuestMode(false);
     showToast('Déconnexion effectuée.');
+  };
+
+  const handleAddClinic = (newClinic: ClinicStructure) => {
+    setClinics((prev) => [newClinic, ...prev]);
+    showToast(`✓ Établissement "${newClinic.nom}" ajouté au réseau sanitaire.`);
+  };
+
+  const handleUpdateClinic = (updatedClinic: ClinicStructure) => {
+    setClinics((prev) => prev.map((c) => (c.id === updatedClinic.id ? updatedClinic : c)));
+    showToast(`✓ Paramètres de "${updatedClinic.nom}" mis à jour.`);
+  };
+
+  const handleSelectClinicForControl = (clinicNom: string) => {
+    setSelectedSite(clinicNom);
+    setCurrentTab('dashboard');
+    showToast(`👑 Prise de contrôle : ${clinicNom}`);
   };
 
   const showToast = (msg: string) => {
@@ -331,6 +367,7 @@ export const App: React.FC = () => {
         currentUser={currentUser}
         onLogout={handleLogout}
         onShowLoginModal={() => setShowLoginModal(true)}
+        availableClinics={clinics.map(c => ({ id: c.id, nom: c.nom }))}
       />
 
       {/* Main Content Area */}
@@ -395,6 +432,17 @@ export const App: React.FC = () => {
 
         {/* TAB 6: PLAN D'IMPLÉMENTATION 2026 */}
         {currentTab === 'plan' && <ImplementationPlanView />}
+
+        {/* TAB 7: SUPER ADMIN MULTI-CLINIQUES */}
+        {currentTab === 'superadmin' && (
+          <SuperAdminView
+            clinics={clinics}
+            onAddClinic={handleAddClinic}
+            onUpdateClinic={handleUpdateClinic}
+            onSelectClinicForControl={handleSelectClinicForControl}
+            fiches={fiches}
+          />
+        )}
       </main>
 
       {/* Printable Sheet Modal */}
