@@ -58,14 +58,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
     }
   };
 
-  const handleQuickDemo = (demoEmail: string) => {
+  const handleQuickDemo = (demoKey: string, cleanName: string) => {
     const allAccounts = getAllStaffAccounts();
-    const demo = allAccounts[demoEmail.toLowerCase()];
+    const demo = allAccounts[demoKey.toLowerCase()];
     if (demo) {
-      setEmail(demo.user.nomComplet.split(' ')[0] || demo.user.email);
+      setEmail(cleanName);
       setPassword(demo.password);
       setErrorMsg(null);
-      setSuccessMsg(`Identifiants de ${demo.user.nomComplet} pré-remplis.`);
+      setSuccessMsg(`Connexion prête pour : ${cleanName}`);
     }
   };
 
@@ -226,14 +226,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
             {/* Login / Nom de connexion */}
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                Identifiant / Nom de Connexion *
+                Votre Nom de Connexion *
               </label>
               <div style={{ position: 'relative' }}>
                 <User size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
                   type="text"
                   required
-                  placeholder="Votre Nom ou email (ex: mister, adama, kone, dr.kone)"
+                  placeholder="Entrez votre Nom (ex: Adama, Koné, Souleymane, Amlan, Yao...)"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -248,8 +248,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   }}
                 />
               </div>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
-                Connectez-vous simplement avec votre <strong>Nom</strong> ou votre email.
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                👤 Connexion directe avec votre <strong>Nom</strong> (sans adresse email).
               </span>
             </div>
 
@@ -351,7 +351,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
               <button
                 type="button"
-                onClick={() => handleQuickDemo('konedamaa@gmail.com')}
+                onClick={() => handleQuickDemo('adama', 'Adama Koné')}
                 style={{
                   background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(180, 83, 9, 0.25) 100%)',
                   border: '1px solid rgba(234, 88, 12, 0.4)',
@@ -372,7 +372,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleQuickDemo('dr.kone@sante.gouv.ci')}
+                onClick={() => handleQuickDemo('kone', 'Dr. Koné')}
                 style={{
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -393,7 +393,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleQuickDemo('infirmiere.amlan@sante.gouv.ci')}
+                onClick={() => handleQuickDemo('amlan', 'Inf. Amlan')}
                 style={{
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -414,7 +414,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleQuickDemo('agent.yao@sante.gouv.ci')}
+                onClick={() => handleQuickDemo('yao', 'Agent Yao')}
                 style={{
                   background: 'rgba(255, 255, 255, 0.04)',
                   border: '1px solid rgba(255, 255, 255, 0.12)',

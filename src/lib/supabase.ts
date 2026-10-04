@@ -116,63 +116,95 @@ export async function deleteConsultationFromSupabase(ficheId: string): Promise<{
 
 import type { AuthUser, UserRole } from '../types/auth';
 
-// Comptes de démonstration préconfigurés pour les structures sanitaires de Côte d'Ivoire
+export function normalizeLogin(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove accents (é -> e, etc.)
+    .replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '') // strip title prefixes
+    .replace(/[^a-z0-9]/g, '') // keep only alphanumeric
+    .trim();
+}
+
+const USER_SUPER_ADMIN: AuthUser = {
+  id: 'super-admin-adama-kone',
+  email: 'konedamaa@gmail.com',
+  nomComplet: 'Adama Koné (Super Administrateur Réseau)',
+  role: 'super_admin',
+  structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
+  numeroMatricule: 'MSHP-SUPER-ADMIN-01'
+};
+
+const USER_DR_KONE: AuthUser = {
+  id: 'demo-dr-kone',
+  email: 'dr.kone@sante.gouv.ci',
+  nomComplet: 'Dr. Koné Souleymane (Médecin Chef)',
+  role: 'medecin',
+  structureNom: 'Centre de Santé Urbain de Treichville (Abidjan)',
+  numeroMatricule: 'MSHP-CI-48291'
+};
+
+const USER_INF_AMLAN: AuthUser = {
+  id: 'demo-inf-amlan',
+  email: 'infirmiere.amlan@sante.gouv.ci',
+  nomComplet: 'Inf. Amlan Kouakou',
+  role: 'infirmier',
+  structureNom: 'Formation Sanitaire Urbaine de Yopougon Attié',
+  numeroMatricule: 'MSHP-CI-91024'
+};
+
+const USER_DIR_BAKAYOKO: AuthUser = {
+  id: 'demo-super-admin',
+  email: 'directeur.mshp@sante.gouv.ci',
+  nomComplet: 'Dr. Bakayoko Ibrahima (Directeur Général Santé)',
+  role: 'administrateur',
+  structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
+  numeroMatricule: 'MSHP-DIR-0001'
+};
+
+const USER_AGENT_YAO: AuthUser = {
+  id: 'demo-agent-yao',
+  email: 'agent.yao@sante.gouv.ci',
+  nomComplet: 'Agent Yao N\'Guessan',
+  role: 'agent_communautaire',
+  structureNom: 'Centre de Santé Rural de Bouaké-Koko',
+  numeroMatricule: 'MSHP-CI-11409'
+};
+
+// Comptes configurés accessibles par NOM simplement ou email
 export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = {
-  'konedamaa@gmail.com': {
-    password: 'madouu1966@',
-    user: {
-      id: 'super-admin-adama-kone',
-      email: 'konedamaa@gmail.com',
-      nomComplet: 'Adama Koné (Super Administrateur Réseau)',
-      role: 'super_admin',
-      structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
-      numeroMatricule: 'MSHP-SUPER-ADMIN-01'
-    }
-  },
-  'dr.kone@sante.gouv.ci': {
-    password: 'Password123!',
-    user: {
-      id: 'demo-dr-kone',
-      email: 'dr.kone@sante.gouv.ci',
-      nomComplet: 'Dr. Koné Souleymane (Médecin Chef)',
-      role: 'medecin',
-      structureNom: 'Centre de Santé Urbain de Treichville (Abidjan)',
-      numeroMatricule: 'MSHP-CI-48291'
-    }
-  },
-  'infirmiere.amlan@sante.gouv.ci': {
-    password: 'Password123!',
-    user: {
-      id: 'demo-inf-amlan',
-      email: 'infirmiere.amlan@sante.gouv.ci',
-      nomComplet: 'Inf. Amlan Kouakou',
-      role: 'infirmier',
-      structureNom: 'Formation Sanitaire Urbaine de Yopougon Attié',
-      numeroMatricule: 'MSHP-CI-91024'
-    }
-  },
-  'directeur.mshp@sante.gouv.ci': {
-    password: 'Password123!',
-    user: {
-      id: 'demo-super-admin',
-      email: 'directeur.mshp@sante.gouv.ci',
-      nomComplet: 'Dr. Bakayoko Ibrahima (Directeur Général Santé)',
-      role: 'administrateur',
-      structureNom: 'Direction Générale de la Santé & CMU (Côte d\'Ivoire)',
-      numeroMatricule: 'MSHP-DIR-0001'
-    }
-  },
-  'agent.yao@sante.gouv.ci': {
-    password: 'Password123!',
-    user: {
-      id: 'demo-agent-yao',
-      email: 'agent.yao@sante.gouv.ci',
-      nomComplet: 'Agent Yao N\'Guessan',
-      role: 'agent_communautaire',
-      structureNom: 'Centre de Santé Rural de Bouaké-Koko',
-      numeroMatricule: 'MSHP-CI-11409'
-    }
-  }
+  // Super Admin: Login avec "adama", "adama kone", "kone", ou email
+  'adama': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
+  'adama kone': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
+  'adamakone': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
+  'konedamaa@gmail.com': { password: 'madouu1966@', user: USER_SUPER_ADMIN },
+
+  // Dr. Koné: Login avec "kone", "dr. kone", "souleymane"
+  'kone': { password: 'Password123!', user: USER_DR_KONE },
+  'dr. kone': { password: 'Password123!', user: USER_DR_KONE },
+  'dr.kone': { password: 'Password123!', user: USER_DR_KONE },
+  'drkone': { password: 'Password123!', user: USER_DR_KONE },
+  'souleymane': { password: 'Password123!', user: USER_DR_KONE },
+  'dr.kone@sante.gouv.ci': { password: 'Password123!', user: USER_DR_KONE },
+
+  // Inf. Amlan: Login avec "amlan", "amlan kouakou"
+  'amlan': { password: 'Password123!', user: USER_INF_AMLAN },
+  'inf. amlan': { password: 'Password123!', user: USER_INF_AMLAN },
+  'infamlan': { password: 'Password123!', user: USER_INF_AMLAN },
+  'amlan kouakou': { password: 'Password123!', user: USER_INF_AMLAN },
+  'infirmiere.amlan@sante.gouv.ci': { password: 'Password123!', user: USER_INF_AMLAN },
+
+  // Directeur Bakayoko: Login avec "bakayoko", "directeur"
+  'bakayoko': { password: 'Password123!', user: USER_DIR_BAKAYOKO },
+  'directeur': { password: 'Password123!', user: USER_DIR_BAKAYOKO },
+  'directeur.mshp@sante.gouv.ci': { password: 'Password123!', user: USER_DIR_BAKAYOKO },
+
+  // Agent Yao: Login avec "yao", "agent yao"
+  'yao': { password: 'Password123!', user: USER_AGENT_YAO },
+  'agent yao': { password: 'Password123!', user: USER_AGENT_YAO },
+  'agentyao': { password: 'Password123!', user: USER_AGENT_YAO },
+  'yao n\'guessan': { password: 'Password123!', user: USER_AGENT_YAO },
+  'agent.yao@sante.gouv.ci': { password: 'Password123!', user: USER_AGENT_YAO },
 };
 
 /**
@@ -198,14 +230,41 @@ export function saveSuperAdminStaffAccount(identifier: string, password: string,
   const cleanKey = identifier.trim().toLowerCase();
   accounts[cleanKey] = { password, user };
 
-  // Indexer également par le nom simple et le préfixe pour permettre la connexion par Nom simplement
-  if (user.nomComplet) {
-    const cleanNom = user.nomComplet.trim().toLowerCase();
-    accounts[cleanNom] = { password, user };
+  const normKey = normalizeLogin(cleanKey);
+  if (normKey) {
+    accounts[normKey] = { password, user };
   }
+
+  // Indexer par toutes les variantes du Nom pour garantir une connexion simple par le nom
+  if (user.nomComplet) {
+    const rawNom = user.nomComplet.trim().toLowerCase();
+    accounts[rawNom] = { password, user };
+
+    const normNom = normalizeLogin(rawNom);
+    if (normNom) {
+      accounts[normNom] = { password, user };
+    }
+
+    // Indexer chaque mot du nom (ex: "souleymane", "kone", "yao", "amlan")
+    const words = rawNom
+      .replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '')
+      .split(/\s+/);
+    words.forEach(w => {
+      const cleanW = w.trim();
+      if (cleanW.length >= 2) {
+        accounts[cleanW] = { password, user };
+        const normW = normalizeLogin(cleanW);
+        if (normW) {
+          accounts[normW] = { password, user };
+        }
+      }
+    });
+  }
+
   if (cleanKey.includes('@')) {
     const prefix = cleanKey.split('@')[0];
     accounts[prefix] = { password, user };
+    accounts[normalizeLogin(prefix)] = { password, user };
   }
 
   localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
@@ -272,13 +331,14 @@ export async function getCurrentAuthUser(): Promise<AuthUser | null> {
 }
 
 /**
- * Connexion avec Nom d'utilisateur ou Email et mot de passe (Multi-identifiant)
+ * Connexion avec Nom de l'utilisateur ou Identifiant et mot de passe (Connexion par Nom)
  */
 export async function signInWithEmail(identifier: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
   const cleanId = identifier.trim().toLowerCase();
+  const normInput = normalizeLogin(cleanId);
   const allStaff = getAllStaffAccounts();
 
-  // 1. Recherche directe dans la liste de tous les comptes soignants autorisés
+  // 1. Recherche directe dans la liste
   if (allStaff[cleanId]) {
     if (allStaff[cleanId].password === password) {
       const staffUser = allStaff[cleanId].user;
@@ -289,22 +349,39 @@ export async function signInWithEmail(identifier: string, password: string): Pro
     }
   }
 
-  // 2. Recherche tolérante par Nom complet, email, ou identifiant
+  // 2. Recherche par clé normalisée (sans accents, sans dr/inf, sans espaces)
+  if (normInput && allStaff[normInput]) {
+    if (allStaff[normInput].password === password) {
+      const staffUser = allStaff[normInput].user;
+      localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
+      return { user: staffUser, error: null };
+    } else {
+      return { user: null, error: 'Mot de passe incorrect pour cet identifiant.' };
+    }
+  }
+
+  // 3. Recherche tolérante par Nom complet (avec ou sans accents, avec ou sans titre)
   for (const [key, account] of Object.entries(allStaff)) {
-    const userNom = account.user.nomComplet.toLowerCase();
+    const rawNom = account.user.nomComplet.toLowerCase();
+    const normNom = normalizeLogin(rawNom);
     const userEmail = account.user.email.toLowerCase();
     const emailPrefix = userEmail.includes('@') ? userEmail.split('@')[0] : userEmail;
     const username = account.user.username?.toLowerCase() || '';
 
     const matches = (
       key.toLowerCase() === cleanId ||
+      normalizeLogin(key) === normInput ||
       userEmail === cleanId ||
       emailPrefix === cleanId ||
       username === cleanId ||
-      userNom === cleanId ||
-      userNom.split(' ').some(part => part.length >= 3 && part === cleanId) ||
-      cleanId.includes(userNom) ||
-      userNom.includes(cleanId)
+      rawNom === cleanId ||
+      normNom === normInput ||
+      (normInput.length >= 3 && normNom.includes(normInput)) ||
+      (normInput.length >= 3 && normInput.includes(normNom)) ||
+      rawNom.split(/\s+/).some(part => {
+        const normPart = normalizeLogin(part);
+        return normPart.length >= 3 && (normPart === normInput || normPart.includes(normInput) || normInput.includes(normPart));
+      })
     );
 
     if (matches) {

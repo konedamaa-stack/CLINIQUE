@@ -63,26 +63,27 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
 
   const handleCreateEmployee = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empNom || !empEmail || !empPassword) {
-      setFeedback({ type: 'error', message: 'Veuillez remplir le nom, l\'email et le mot de passe.' });
+    if (!empNom || !empPassword) {
+      setFeedback({ type: 'error', message: 'Veuillez remplir au minimum le Nom et le Mot de passe.' });
       return;
     }
 
-    const cleanEmail = empEmail.trim().toLowerCase();
+    const cleanLogin = (empEmail.trim() || empNom.trim().split(' ')[0] || 'soignant').toLowerCase();
     const newEmployee: AuthUser = {
       id: 'staff-' + Date.now(),
-      email: cleanEmail,
+      email: cleanLogin.includes('@') ? cleanLogin : `${cleanLogin}@clinique.ci`,
+      username: cleanLogin,
       nomComplet: empNom.trim(),
       role: empRole,
       structureNom: selectedSite,
       numeroMatricule: empMatricule.trim() || `MSHP-CI-${Math.floor(10000 + Math.random() * 90000)}`
     };
 
-    saveSuperAdminStaffAccount(cleanEmail, empPassword, newEmployee);
+    saveSuperAdminStaffAccount(cleanLogin, empPassword, newEmployee);
     setStaffAccounts(getAllStaffAccounts());
     setFeedback({
       type: 'success',
-      message: `Compte employé créé avec succès pour ${newEmployee.nomComplet} (${newEmployee.role}) !`
+      message: `Compte créé avec succès pour ${newEmployee.nomComplet} ! Il peut se connecter directement avec son Nom "${newEmployee.nomComplet}".`
     });
 
     // Reset form
@@ -106,7 +107,8 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
   };
 
   const handleCopyCredentials = (email: string, pass: string, name: string) => {
-    navigator.clipboard.writeText(`Identifiants Établissement : ${selectedSite}\nNom: ${name}\nLogin (Email): ${email}\nMot de passe: ${pass}`);
+    const cleanNameLogin = name.replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '').split(' ')[0] || email;
+    navigator.clipboard.writeText(`Établissement: ${selectedSite}\nNom: ${name}\nLogin de connexion (Nom): ${cleanNameLogin}\nMot de passe: ${pass}`);
     setCopiedKey(email);
     setTimeout(() => setCopiedKey(null), 2500);
   };
@@ -585,12 +587,11 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                  Email de Connexion (Login de l'employé) *
+                  Login de Connexion (Optionnel - son Nom sera utilisé par défaut)
                 </label>
                 <input
-                  type="email"
-                  required
-                  placeholder="ex: amlan.inf@sante.gouv.ci"
+                  type="text"
+                  placeholder="Laisser vide pour utiliser son Nom (ou ex: kouassi, yao)"
                   value={empEmail}
                   onChange={(e) => setEmpEmail(e.target.value)}
                   style={{
@@ -602,6 +603,9 @@ export const ClinicTeamView: React.FC<ClinicTeamViewProps> = ({
                     boxSizing: 'border-box'
                   }}
                 />
+                <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  💡 L'employé se connectera directement avec son <strong>Nom</strong> et son mot de passe.
+                </span>
               </div>
 
               <div>

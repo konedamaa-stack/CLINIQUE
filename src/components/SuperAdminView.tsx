@@ -133,7 +133,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       ? (newSubdomain.includes('.') ? newSubdomain.toLowerCase() : `${newSubdomain.toLowerCase()}.clinique.ci`) 
       : `${baseSlug}.clinique.ci`;
 
-    const cleanDirectorEmail = (newEmail || `${baseSlug}.dir@sante.gouv.ci`).trim().toLowerCase();
+    const cleanDirectorEmail = (newEmail || (newDirecteur ? newDirecteur.replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '').split(' ')[0].toLowerCase() : `${baseSlug}-dir`)).trim().toLowerCase();
     const cleanDirectorPassword = newDirecteurPassword.trim() || 'Password123!';
 
     const created: ClinicStructure = {
@@ -718,7 +718,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            navigator.clipboard.writeText(`Établissement: ${c.nom}\nDirecteur: ${c.directeurNom}\nLogin: ${c.email}\nMot de passe: ${c.directeurPassword || 'Password123!'}`);
+                            const nameLogin = c.directeurNom.replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '').split(' ')[0] || c.email;
+                            navigator.clipboard.writeText(`Établissement: ${c.nom}\nDirecteur: ${c.directeurNom}\nLogin de connexion (Nom): ${nameLogin}\nMot de passe: ${c.directeurPassword || 'Password123!'}`);
                             setStaffFeedback({ type: 'success', message: `Identifiants du Directeur (${c.directeurNom}) copiés !` });
                           }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0 2px' }}
@@ -1045,16 +1046,18 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                      Login du Directeur (Email de connexion) *
+                      Login du Directeur (Nom ou identifiant de connexion) *
                     </label>
                     <input
-                      type="email"
-                      required
-                      placeholder="ex: directeur.csu@sante.gouv.ci"
+                      type="text"
+                      placeholder="ex: kouame, adjoua, ou dr.adjoua"
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
                       style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
                     />
+                    <span style={{ fontSize: '0.72rem', color: '#9a3412', marginTop: '3px', display: 'block' }}>
+                      💡 Laisser vide pour utiliser automatiquement le prénom ou nom du directeur.
+                    </span>
                   </div>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
