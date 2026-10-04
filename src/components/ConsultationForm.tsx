@@ -46,6 +46,7 @@ interface ConsultationFormProps {
   onCancel: () => void;
   onPrintPreview: (fiche: FicheConsultation) => void;
   siteNom: string;
+  currentAgentNom?: string;
 }
 
 export const ConsultationForm: React.FC<ConsultationFormProps> = ({
@@ -54,7 +55,8 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
   onSave,
   onCancel,
   onPrintPreview,
-  siteNom
+  siteNom,
+  currentAgentNom
 }) => {
   const [activeStep, setActiveStep] = useState<number>(1);
   const [patientCode, setPatientCode] = useState<string>(
@@ -220,7 +222,7 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
       id: initialFiche?.id || 'fiche-' + Date.now(),
       codePatient: patientCode,
       siteNom: initialFiche?.siteNom || siteNom,
-      agentNom: initialFiche?.agentNom || 'Personnel Soignant de Service',
+      agentNom: initialFiche?.agentNom || currentAgentNom || 'Personnel Soignant de Service',
       createdAt: initialFiche?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       estComplete: false,

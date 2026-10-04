@@ -1,4 +1,3 @@
-import React from 'react';
 import { 
   Activity, 
   FileText, 
@@ -9,8 +8,11 @@ import {
   PlusCircle, 
   ShieldAlert,
   Calendar,
-  Database
+  Database,
+  LogOut,
+  LogIn
 } from 'lucide-react';
+import type { AuthUser } from '../types/auth';
 
 interface HeaderProps {
   currentTab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan';
@@ -19,6 +21,9 @@ interface HeaderProps {
   onSelectSite: (site: string) => void;
   casPresumesTBCount: number;
   isSupabaseConnected?: boolean;
+  currentUser?: AuthUser | null;
+  onLogout?: () => void;
+  onShowLoginModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +33,9 @@ export const Header: React.FC<HeaderProps> = ({
   onSelectSite,
   casPresumesTBCount,
   isSupabaseConnected = false,
+  currentUser = null,
+  onLogout,
+  onShowLoginModal
 }) => {
   return (
     <header style={{
@@ -152,8 +160,91 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{isSupabaseConnected ? 'Supabase Cloud Actif' : 'Stockage Local (Offline-Ready)'}</span>
         </div>
 
-        {/* Action Buttons */}
+        {/* User Authentication Profile & Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {currentUser ? (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              padding: '4px 10px 4px 6px',
+              borderRadius: '24px',
+              border: '1px solid rgba(255, 255, 255, 0.15)'
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #14b8a6 0%, #0369a1 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+              }}>
+                {currentUser.nomComplet.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap' }}>
+                  {currentUser.nomComplet}
+                </span>
+                <span style={{ fontSize: '0.68rem', color: '#5eead4', textTransform: 'capitalize' }}>
+                  {currentUser.role.replace('_', ' ')}
+                </span>
+              </div>
+              {onLogout && (
+                <button
+                  type="button"
+                  title="Se déconnecter"
+                  onClick={onLogout}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    color: '#fca5a5',
+                    padding: '6px',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: '4px',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.4)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                >
+                  <LogOut size={14} />
+                </button>
+              )}
+            </div>
+          ) : (
+            onShowLoginModal && (
+              <button
+                type="button"
+                onClick={onShowLoginModal}
+                style={{
+                  background: 'rgba(20, 184, 166, 0.2)',
+                  border: '1px solid rgba(20, 184, 166, 0.4)',
+                  color: '#2dd4bf',
+                  padding: '7px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <LogIn size={15} />
+                Connexion
+              </button>
+            )
+          )}
+
           <button 
             id="btn-header-new-consultation"
             onClick={() => onSelectTab('consultation')}

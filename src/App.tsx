@@ -7,16 +7,25 @@ import { PrintableFiche } from './components/PrintableFiche';
 import { ClinicalProtocols } from './components/ClinicalProtocols';
 import { ImplementationPlanView } from './components/ImplementationPlanView';
 import { AppointmentsView } from './components/AppointmentsView';
+import { LoginView } from './components/LoginView';
 import type { FicheConsultation, TypePopulation } from './types/clinical';
+import type { AuthUser } from './types/auth';
 import { INITIAL_MOCK_FICHES, calculateKPIsFromFiches } from './data/mockPatients';
 import {
   isSupabaseConfigured,
   fetchConsultationsFromSupabase,
   upsertConsultationToSupabase,
-  deleteConsultationFromSupabase
+  deleteConsultationFromSupabase,
+  getCurrentAuthUser,
+  signOutUser
 } from './lib/supabase';
 
 export const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true);
+  const [isGuestMode, setIsGuestMode] = useState<boolean>(false);
+  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
+
   const [fiches, setFiches] = useState<FicheConsultation[]>(() => {
     const saved = localStorage.getItem('clinique_consultations_ci');
     if (saved) {
@@ -39,6 +48,19 @@ export const App: React.FC = () => {
   const [registryFilterTB, setRegistryFilterTB] = useState<boolean>(false);
   const [registryFilterPop, setRegistryFilterPop] = useState<TypePopulation | null>(null);
 
+  // Check auth on mount
+  useEffect(() => {
+    getCurrentAuthUser().then((user) => {
+      if (user) {
+        setCurrentUser(user);
+        if (user.structureNom) {
+          setSelectedSite(user.structureNom);
+        }
+      }
+      setIsAuthLoading(false);
+    });
+  }, []);
+
   // Sync with Supabase on mount if configured
   useEffect(() => {
     if (isSupabaseConfigured) {
@@ -56,6 +78,23 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('clinique_consultations_ci', JSON.stringify(fiches));
   }, [fiches]);
+
+  const handleLoginSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    setIsGuestMode(false);
+    setShowLoginModal(false);
+    if (user.structureNom) {
+      setSelectedSite(user.structureNom);
+    }
+    showToast(`✓ Connecté : ${user.nomComplet} (${user.role.replace('_', ' ')})`);
+  };
+
+  const handleLogout = async () => {
+    await signOutUser();
+    setCurrentUser(null);
+    setIsGuestMode(false);
+    showToast('Déconnexion effectuée.');
+  };
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -113,7 +152,7 @@ export const App: React.FC = () => {
       id: 'fiche-' + Date.now(),
       codePatient: existingFiche.codePatient,
       siteNom: selectedSite,
-      agentNom: 'Personnel Soignant de Service',
+      agentNom: currentUser ? currentUser.nomComplet : (existingFiche.agentNom || 'Personnel Soignant de Service'),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       estComplete: false,
@@ -209,6 +248,47 @@ export const App: React.FC = () => {
   // Live KPI statistics
   const stats = calculateKPIsFromFiches(fiches);
 
+  // Écran de chargement initial
+  if (isAuthLoading) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0f172a',
+        color: '#ffffff',
+        fontFamily: 'system-ui, sans-serif'
+      }}>
+        <div style={{
+          width: '44px',
+          height: '44px',
+          border: '3px solid rgba(20, 184, 166, 0.2)',
+          borderTopColor: '#14b8a6',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <p style={{ marginTop: '16px', fontSize: '0.9rem', color: '#94a3b8', fontWeight: 500 }}>
+          Vérification de la session médicale sécurisée...
+        </p>
+      </div>
+    );
+  }
+
+  // Écran de connexion obligatoire si aucun utilisateur connecté et pas en mode invité
+  if (!currentUser && !isGuestMode) {
+    return (
+      <LoginView
+        onLoginSuccess={handleLoginSuccess}
+        onContinueAsGuest={() => {
+          setIsGuestMode(true);
+          showToast('Mode Invité activé. Vous pouvez vous connecter à tout moment.');
+        }}
+      />
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
       {/* Toast Notification */}
@@ -248,6 +328,9 @@ export const App: React.FC = () => {
         onSelectSite={setSelectedSite}
         casPresumesTBCount={stats.casPresumesTBTotal}
         isSupabaseConnected={isSupabaseConfigured}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onShowLoginModal={() => setShowLoginModal(true)}
       />
 
       {/* Main Content Area */}
@@ -279,6 +362,7 @@ export const App: React.FC = () => {
             }}
             onPrintPreview={handlePrintPreview}
             siteNom={selectedSite}
+            currentAgentNom={currentUser?.nomComplet}
           />
         )}
 
@@ -319,6 +403,54 @@ export const App: React.FC = () => {
           fiche={previewFiche}
           onClose={() => setPreviewFiche(null)}
         />
+      )}
+
+      {/* Login Modal Overlay (when in guest mode) */}
+      {showLoginModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(6px)',
+          zIndex: 1200,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '520px' }}>
+            <button
+              type="button"
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                zIndex: 30,
+                background: 'rgba(255, 255, 255, 0.15)',
+                border: 'none',
+                color: '#ffffff',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1rem'
+              }}
+            >
+              ✕
+            </button>
+            <LoginView
+              onLoginSuccess={handleLoginSuccess}
+              onContinueAsGuest={() => setShowLoginModal(false)}
+            />
+          </div>
+        </div>
       )}
 
       {/* Footer */}
