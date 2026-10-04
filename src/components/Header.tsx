@@ -24,7 +24,7 @@ interface HeaderProps {
   currentUser?: AuthUser | null;
   onLogout?: () => void;
   onShowLoginModal?: () => void;
-  availableClinics?: { id: string; nom: string }[];
+  availableClinics?: { id: string; nom: string; domain?: string }[];
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,6 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
   onShowLoginModal,
   availableClinics = []
 }) => {
+  const currentClinic = availableClinics.find(c => c.nom === selectedSite);
+  const currentClinicDomain = currentClinic?.domain;
   return (
     <header style={{
       background: 'linear-gradient(135deg, #0f172a 0%, #0f766e 100%)',
@@ -123,7 +125,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.08)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
           <Building2 size={16} color="#5eead4" />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site Sanitaire Pilote</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site Sanitaire</span>
+              {currentClinicDomain && (
+                <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: 600, background: 'rgba(56, 189, 248, 0.15)', padding: '1px 6px', borderRadius: '4px' }}>
+                  🌐 {currentClinicDomain}
+                </span>
+              )}
+            </div>
             <select 
               id="site-selector"
               value={selectedSite}

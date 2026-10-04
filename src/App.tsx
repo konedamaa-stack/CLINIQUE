@@ -85,6 +85,47 @@ export const App: React.FC = () => {
     }
   }, [currentTab]);
 
+  // Multi-tenant automatic domain / subdomain resolution
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const hostname = window.location.hostname.toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const domainParam = (searchParams.get('domain') || searchParams.get('subdomain') || '').toLowerCase();
+
+    // 1. Check URL query param (for testing in local dev or Vercel preview URLs)
+    if (domainParam) {
+      const matched = clinics.find(c => 
+        c.slug?.toLowerCase() === domainParam ||
+        c.subdomain?.toLowerCase() === domainParam ||
+        c.subdomain?.toLowerCase().startsWith(domainParam + '.') ||
+        c.customDomain?.toLowerCase() === domainParam ||
+        c.nom.toLowerCase().includes(domainParam)
+      );
+      if (matched) {
+        setSelectedSite(matched.nom);
+        return;
+      }
+    }
+
+    // 2. Check full hostname in production (e.g. treichville.clinique.ci or csu-treichville.ci)
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.endsWith('.vercel.app')) {
+      const matched = clinics.find(c => {
+        const custom = c.customDomain?.toLowerCase();
+        const sub = c.subdomain?.toLowerCase();
+        const slug = c.slug?.toLowerCase();
+        return (
+          (custom && (hostname === custom || hostname === `www.${custom}`)) ||
+          (sub && hostname === sub) ||
+          (slug && hostname.startsWith(slug + '.'))
+        );
+      });
+      if (matched) {
+        setSelectedSite(matched.nom);
+      }
+    }
+  }, [clinics]);
+
   // Check auth on mount
   useEffect(() => {
     getCurrentAuthUser().then((user) => {
@@ -391,7 +432,7 @@ export const App: React.FC = () => {
         currentUser={currentUser}
         onLogout={handleLogout}
         onShowLoginModal={() => setShowLoginModal(true)}
-        availableClinics={clinics.map(c => ({ id: c.id, nom: c.nom }))}
+        availableClinics={clinics.map(c => ({ id: c.id, nom: c.nom, domain: c.customDomain || c.subdomain }))}
       />
 
       {/* Main Content Area */}

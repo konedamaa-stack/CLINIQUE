@@ -25,7 +25,12 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: true
-    }
+    },
+    slug: 'treichville',
+    subdomain: 'treichville.clinique.ci',
+    customDomain: 'csu-treichville.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   },
   {
     id: 'clinic-fsu-yopougon',
@@ -51,7 +56,12 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: true
-    }
+    },
+    slug: 'yopougon',
+    subdomain: 'yopougon.clinique.ci',
+    customDomain: 'fsu-yopougon.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   },
   {
     id: 'clinic-csr-bouake',
@@ -77,7 +87,11 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: true
-    }
+    },
+    slug: 'bouake',
+    subdomain: 'bouake.clinique.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   },
   {
     id: 'clinic-hg-sanpedro',
@@ -103,7 +117,12 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: true
-    }
+    },
+    slug: 'sanpedro',
+    subdomain: 'sanpedro.clinique.ci',
+    customDomain: 'hopital-sanpedro.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   },
   {
     id: 'clinic-chu-cocody',
@@ -129,7 +148,12 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: true
-    }
+    },
+    slug: 'cocody',
+    subdomain: 'cocody.clinique.ci',
+    customDomain: 'chu-cocody.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   },
   {
     id: 'clinic-abobo-sud',
@@ -155,7 +179,11 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: false,
       exportDHIS2: true
-    }
+    },
+    slug: 'abobo',
+    subdomain: 'abobo.clinique.ci',
+    dnsStatus: 'en_attente_dns',
+    sslStatus: 'en_cours'
   },
   {
     id: 'clinic-privee-2plateaux',
@@ -181,6 +209,11 @@ export const INITIAL_CLINICS: ClinicStructure[] = [
       couvertureCMU: true,
       rendezVousRelances: true,
       exportDHIS2: false
-    }
+    },
+    slug: '2plateaux',
+    subdomain: '2plateaux.clinique.ci',
+    customDomain: 'clinique2plateaux.ci',
+    dnsStatus: 'actif',
+    sslStatus: 'valide'
   }
 ];

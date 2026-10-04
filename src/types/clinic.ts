@@ -36,6 +36,12 @@ export interface ClinicStructure {
   casTBDetectesCount: number;
   derniereActivite: string;
   modulesActifs: ClinicModules;
+  // Multi-tenancy & Domaines dédiés par clinique
+  slug: string;
+  subdomain: string;
+  customDomain?: string;
+  dnsStatus: 'actif' | 'en_attente_dns' | 'non_configure';
+  sslStatus: 'valide' | 'en_cours' | 'inactif';
 }
 
 export interface SuperAdminKPIs {

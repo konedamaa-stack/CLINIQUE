@@ -12,7 +12,10 @@ import {
   ExternalLink, 
   X, 
   MapPin, 
-  Award
+  Award,
+  Globe,
+  CheckCircle2,
+  Copy
 } from 'lucide-react';
 import type { ClinicStructure, ClinicType, ClinicStatus } from '../types/clinic';
 import type { FicheConsultation } from '../types/clinical';
@@ -40,6 +43,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   // Modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [configClinic, setConfigClinic] = useState<ClinicStructure | null>(null);
+  const [domainModalClinic, setDomainModalClinic] = useState<ClinicStructure | null>(null);
+
+  // Domain edit state inside modal
+  const [editSubdomain, setEditSubdomain] = useState('');
+  const [editCustomDomain, setEditCustomDomain] = useState('');
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   // New Clinic Form State
   const [newNom, setNewNom] = useState('');
@@ -50,6 +59,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [newTelephone, setNewTelephone] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newAdresse, setNewAdresse] = useState('');
+  const [newSubdomain, setNewSubdomain] = useState('');
+  const [newCustomDomain, setNewCustomDomain] = useState('');
 
   // Filtering
   const filteredClinics = clinics.filter((c) => {
@@ -76,6 +87,18 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     e.preventDefault();
     if (!newNom) return;
 
+    const baseSlug = newNom
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 20) || 'clinique-' + Date.now();
+
+    const finalSubdomain = newSubdomain 
+      ? (newSubdomain.includes('.') ? newSubdomain.toLowerCase() : `${newSubdomain.toLowerCase()}.clinique.ci`) 
+      : `${baseSlug}.clinique.ci`;
+
     const created: ClinicStructure = {
       id: 'clinic-' + Date.now(),
       nom: newNom,
@@ -100,7 +123,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
         couvertureCMU: true,
         rendezVousRelances: true,
         exportDHIS2: true
-      }
+      },
+      slug: baseSlug,
+      subdomain: finalSubdomain,
+      customDomain: newCustomDomain ? newCustomDomain.trim().toLowerCase() : undefined,
+      dnsStatus: 'actif',
+      sslStatus: 'valide'
     };
 
     onAddClinic(created);
@@ -112,6 +140,34 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     setNewTelephone('');
     setNewEmail('');
     setNewAdresse('');
+    setNewSubdomain('');
+    setNewCustomDomain('');
+  };
+
+  const handleOpenDomainModal = (clinic: ClinicStructure) => {
+    setDomainModalClinic(clinic);
+    setEditSubdomain(clinic.subdomain || `${clinic.slug}.clinique.ci`);
+    setEditCustomDomain(clinic.customDomain || '');
+  };
+
+  const handleSaveDomainChanges = () => {
+    if (!domainModalClinic) return;
+    const updated: ClinicStructure = {
+      ...domainModalClinic,
+      subdomain: editSubdomain.trim().toLowerCase(),
+      customDomain: editCustomDomain.trim().toLowerCase() || undefined,
+      dnsStatus: editCustomDomain ? 'actif' : domainModalClinic.dnsStatus
+    };
+    onUpdateClinic(updated);
+    setDomainModalClinic(null);
+  };
+
+  const handleCopyClipboard = (text: string) => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+    }
+    setCopiedText(text);
+    setTimeout(() => setCopiedText(null), 2500);
   };
 
   const handleToggleModule = (key: keyof ClinicStructure['modulesActifs']) => {
@@ -447,12 +503,28 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                     onMouseEnter={(e) => (e.currentTarget.style.background = '#f8fafc')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = '#ffffff')}
                   >
-                    {/* Nom & Localisation */}
+                    {/* Nom & Localisation & Domaine */}
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem' }}>{c.nom}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.78rem', marginTop: '3px' }}>
                         <MapPin size={13} color="#0d9488" />
                         <span>{c.districtSanitaire} • Région {c.regionSanitaire}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '5px' }}>
+                        <Globe size={13} color="#0284c7" />
+                        <span style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 700, fontFamily: 'monospace' }}>
+                          {c.customDomain ? c.customDomain : c.subdomain}
+                        </span>
+                        <span style={{
+                          fontSize: '0.65rem',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          background: c.dnsStatus === 'actif' ? '#dcfce7' : '#fef3c7',
+                          color: c.dnsStatus === 'actif' ? '#15803d' : '#b45309',
+                          fontWeight: 700
+                        }}>
+                          {c.dnsStatus === 'actif' ? 'SSL Actif' : 'DNS en attente'}
+                        </span>
                       </div>
                     </td>
 
@@ -532,7 +604,28 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
                     {/* Actions */}
                     <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                        <button
+                          onClick={() => handleOpenDomainModal(c)}
+                          title="Gérer le domaine et le DNS de cette clinique"
+                          style={{
+                            background: '#f0f9ff',
+                            border: '1px solid #bae6fd',
+                            color: '#0369a1',
+                            padding: '6px 10px',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          <Globe size={14} />
+                          Domaine
+                        </button>
+
                         <button
                           onClick={() => setConfigClinic(c)}
                           title="Paramétrer les modules"
@@ -752,6 +845,40 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 />
               </div>
 
+              {/* Multi-Tenant Domain Configuration */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                    🌐 Sous-domaine dédié *
+                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      placeholder="ex: portbouet"
+                      value={newSubdomain}
+                      onChange={(e) => setNewSubdomain(e.target.value)}
+                      style={{ width: '100%', padding: '9px 10px', borderRadius: '6px 0 0 6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    />
+                    <span style={{ padding: '9px 8px', background: '#e2e8f0', border: '1px solid #cbd5e1', borderLeft: 'none', borderRadius: '0 6px 6px 0', fontSize: '0.78rem', color: '#475569', whiteSpace: 'nowrap' }}>
+                      .clinique.ci
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+                    Domaine Personnalisé (Optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="ex: csu-portbouet.ci"
+                    value={newCustomDomain}
+                    onChange={(e) => setNewCustomDomain(e.target.value)}
+                    style={{ width: '100%', padding: '9px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
                 <button
                   type="button"
@@ -895,6 +1022,236 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 >
                   Fermer & Enregistrer les Modifications
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: GESTION DU DOMAINE DE LA CLINIQUE (Multi-Tenant & DNS) */}
+      {domainModalClinic && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 1300,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '620px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #0369a1 0%, #0f172a 100%)',
+              color: '#ffffff',
+              padding: '18px 24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Globe size={22} color="#38bdf8" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
+                    Domaine & Sous-Domaine Dédié
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.78rem', color: '#cbd5e1' }}>
+                    {domainModalClinic.nom}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setDomainModalClinic(null)}
+                style={{ background: 'transparent', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              <div style={{
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '10px',
+                padding: '14px 16px',
+                fontSize: '0.85rem',
+                color: '#0369a1',
+                lineHeight: 1.5
+              }}>
+                Chaque clinique dispose d'un espace <strong>multi-tenant isolé</strong> accessible sous son propre sous-domaine institutionnel ou sous un nom de domaine personnalisé.
+              </div>
+
+              {/* Subdomain field */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  1. Sous-Domaine Réservé (Standard Réseau CI)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={editSubdomain}
+                    onChange={(e) => setEditSubdomain(e.target.value)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 12px',
+                      borderRadius: '8px 0 0 8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.9rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      color: '#0f172a'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopyClipboard(`https://${editSubdomain}`)}
+                    style={{
+                      padding: '10px 14px',
+                      background: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      borderLeft: 'none',
+                      borderRadius: '0 8px 8px 0',
+                      cursor: 'pointer',
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      color: '#475569'
+                    }}
+                  >
+                    {copiedText === `https://${editSubdomain}` ? (
+                      <>
+                        <CheckCircle2 size={14} color="#16a34a" />
+                        <span style={{ color: '#16a34a', fontWeight: 700 }}>Copié !</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={14} />
+                        <span>Copier</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Custom domain field */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  2. Domaine Personnalisé Externe (Optionnel)
+                </label>
+                <input
+                  type="text"
+                  placeholder="ex: csu-treichville.ci ou sante-treichville.com"
+                  value={editCustomDomain}
+                  onChange={(e) => setEditCustomDomain(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.9rem',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  Permet à la clinique d'utiliser sa propre adresse web avec certificat SSL automatique.
+                </span>
+              </div>
+
+              {/* Vercel DNS Records configuration box */}
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '14px' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Instructions DNS Vercel pour ce domaine :
+                </span>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
+                      <th style={{ padding: '6px 8px' }}>Type</th>
+                      <th style={{ padding: '6px 8px' }}>Nom / Hôte</th>
+                      <th style={{ padding: '6px 8px' }}>Valeur / Cible</th>
+                      <th style={{ padding: '6px 8px' }}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '6px 8px', fontWeight: 700 }}>CNAME</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{domainModalClinic.slug}</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: '#0284c7' }}>cname.vercel-dns.com</td>
+                      <td style={{ padding: '6px 8px', color: '#16a34a', fontWeight: 600 }}>✓ Prêt</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '6px 8px', fontWeight: 700 }}>A</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>@</td>
+                      <td style={{ padding: '6px 8px', fontFamily: 'monospace', color: '#0284c7' }}>76.76.21.21</td>
+                      <td style={{ padding: '6px 8px', color: '#16a34a', fontWeight: 600 }}>✓ Prêt</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectClinicForControl(domainModalClinic.nom);
+                    setDomainModalClinic(null);
+                  }}
+                  style={{
+                    padding: '9px 14px',
+                    background: '#f0fdfa',
+                    border: '1px solid #99f6e4',
+                    color: '#0f766e',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <ExternalLink size={14} />
+                  Tester l'Accès via ce Domaine
+                </button>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDomainModalClinic(null)}
+                    style={{ padding: '9px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveDomainChanges}
+                    style={{
+                      padding: '9px 18px',
+                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    Enregistrer le Domaine
+                  </button>
+                </div>
               </div>
             </div>
           </div>
