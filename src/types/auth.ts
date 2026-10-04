@@ -3,6 +3,7 @@ export type UserRole = 'super_admin' | 'administrateur' | 'medecin' | 'infirmier
 export interface AuthUser {
   id: string;
   email: string;
+  username?: string;
   nomComplet: string;
   role: UserRole;
   structureNom: string;

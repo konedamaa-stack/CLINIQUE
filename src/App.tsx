@@ -535,15 +535,16 @@ export const App: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(6px)',
+          background: 'rgba(0, 0, 0, 0.8)',
+          backdropFilter: 'blur(8px)',
           zIndex: 1200,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'center',
-          padding: '20px'
+          overflowY: 'auto',
+          padding: '24px 16px 80px'
         }}>
-          <div style={{ position: 'relative', width: '100%', maxWidth: '520px' }}>
+          <div style={{ position: 'relative', width: '100%', maxWidth: '490px', margin: 'auto 0' }}>
             <button
               type="button"
               onClick={() => setShowLoginModal(false)}

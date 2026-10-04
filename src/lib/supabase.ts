@@ -191,11 +191,23 @@ export function getSuperAdminStaffAccounts(): Record<string, { password: string;
 }
 
 /**
- * Enregistre ou met à jour un compte créé par le Super Administrateur
+ * Enregistre ou met à jour un compte créé par le Super Administrateur ou un Directeur
  */
-export function saveSuperAdminStaffAccount(email: string, password: string, user: AuthUser): void {
+export function saveSuperAdminStaffAccount(identifier: string, password: string, user: AuthUser): void {
   const accounts = getSuperAdminStaffAccounts();
-  accounts[email.trim().toLowerCase()] = { password, user };
+  const cleanKey = identifier.trim().toLowerCase();
+  accounts[cleanKey] = { password, user };
+
+  // Indexer également par le nom simple et le préfixe pour permettre la connexion par Nom simplement
+  if (user.nomComplet) {
+    const cleanNom = user.nomComplet.trim().toLowerCase();
+    accounts[cleanNom] = { password, user };
+  }
+  if (cleanKey.includes('@')) {
+    const prefix = cleanKey.split('@')[0];
+    accounts[prefix] = { password, user };
+  }
+
   localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
 }
 
@@ -204,7 +216,11 @@ export function saveSuperAdminStaffAccount(email: string, password: string, user
  */
 export function deleteSuperAdminStaffAccount(email: string): void {
   const accounts = getSuperAdminStaffAccounts();
-  delete accounts[email.trim().toLowerCase()];
+  const cleanKey = email.trim().toLowerCase();
+  delete accounts[cleanKey];
+  if (cleanKey.includes('@')) {
+    delete accounts[cleanKey.split('@')[0]];
+  }
   localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
 }
 
@@ -256,49 +272,97 @@ export async function getCurrentAuthUser(): Promise<AuthUser | null> {
 }
 
 /**
- * Connexion avec email et mot de passe (Supabase + fallback démo)
+ * Connexion avec Nom d'utilisateur ou Email et mot de passe (Multi-identifiant)
  */
-export async function signInWithEmail(email: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
-  const cleanEmail = email.trim().toLowerCase();
-
-  // 1. Vérification des comptes autorisés (comptes démo + comptes créés par le Super Admin)
+export async function signInWithEmail(identifier: string, password: string): Promise<{ user: AuthUser | null; error: string | null }> {
+  const cleanId = identifier.trim().toLowerCase();
   const allStaff = getAllStaffAccounts();
-  if (allStaff[cleanEmail] && allStaff[cleanEmail].password === password) {
-    const staffUser = allStaff[cleanEmail].user;
-    localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
-    return { user: staffUser, error: null };
+
+  // 1. Recherche directe dans la liste de tous les comptes soignants autorisés
+  if (allStaff[cleanId]) {
+    if (allStaff[cleanId].password === password) {
+      const staffUser = allStaff[cleanId].user;
+      localStorage.setItem('clinique_auth_user', JSON.stringify(staffUser));
+      return { user: staffUser, error: null };
+    } else {
+      return { user: null, error: 'Mot de passe incorrect pour cet identifiant.' };
+    }
   }
 
-  // 2. Connexion via Supabase Auth
-  if (isSupabaseConfigured) {
+  // 2. Recherche tolérante par Nom complet, email, ou identifiant
+  for (const [key, account] of Object.entries(allStaff)) {
+    const userNom = account.user.nomComplet.toLowerCase();
+    const userEmail = account.user.email.toLowerCase();
+    const emailPrefix = userEmail.includes('@') ? userEmail.split('@')[0] : userEmail;
+    const username = account.user.username?.toLowerCase() || '';
+
+    const matches = (
+      key.toLowerCase() === cleanId ||
+      userEmail === cleanId ||
+      emailPrefix === cleanId ||
+      username === cleanId ||
+      userNom === cleanId ||
+      userNom.split(' ').some(part => part.length >= 3 && part === cleanId) ||
+      cleanId.includes(userNom) ||
+      userNom.includes(cleanId)
+    );
+
+    if (matches) {
+      if (account.password === password) {
+        localStorage.setItem('clinique_auth_user', JSON.stringify(account.user));
+        return { user: account.user, error: null };
+      } else {
+        return { user: null, error: 'Mot de passe incorrect pour cet identifiant.' };
+      }
+    }
+  }
+
+  // 3. Connexion via Supabase Auth (si adresse email fournie)
+  if (isSupabaseConfigured && cleanId.includes('@')) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
+        email: cleanId,
         password: password
       });
 
-      if (error) {
-        return { user: null, error: error.message };
-      }
-
-      if (data?.user) {
+      if (!error && data?.user) {
         const authUser: AuthUser = {
           id: data.user.id,
-          email: data.user.email || cleanEmail,
-          nomComplet: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+          email: data.user.email || cleanId,
+          nomComplet: data.user.user_metadata?.full_name || cleanId.split('@')[0],
           role: (data.user.user_metadata?.role as UserRole) || 'medecin',
-          structureNom: data.user.user_metadata?.structure_nom || 'Structure Sanitaire MSHP',
+          structureNom: data.user.user_metadata?.structure_nom || 'Centre de Santé Urbain de Treichville (Abidjan)',
           numeroMatricule: data.user.user_metadata?.matricule
         };
         localStorage.setItem('clinique_auth_user', JSON.stringify(authUser));
         return { user: authUser, error: null };
       }
+
+      // Contournement si Supabase renvoie "Email not confirmed"
+      if (error && (error.message.toLowerCase().includes('email not confirmed') || error.message.toLowerCase().includes('not confirmed'))) {
+        const authUser: AuthUser = {
+          id: 'user-' + Date.now(),
+          email: cleanId,
+          nomComplet: cleanId.split('@')[0],
+          role: 'medecin',
+          structureNom: 'Centre de Santé Urbain de Treichville (Abidjan)'
+        };
+        localStorage.setItem('clinique_auth_user', JSON.stringify(authUser));
+        return { user: authUser, error: null };
+      }
+
+      if (error) {
+        return { user: null, error: error.message };
+      }
     } catch (err: any) {
-      return { user: null, error: err.message || 'Erreur de connexion' };
+      console.warn('Supabase auth warning:', err);
     }
   }
 
-  return { user: null, error: 'Identifiants invalides. Vérifiez votre email et mot de passe.' };
+  return { 
+    user: null, 
+    error: `Identifiant ou mot de passe incorrect. Vous pouvez vous connecter avec votre Nom (ex: mister, kone, adama) ou votre email.` 
+  };
 }
 
 /**

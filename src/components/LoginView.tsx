@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Activity, 
   Lock, 
-  Mail, 
+  User, 
   ShieldCheck, 
   Eye, 
   EyeOff, 
@@ -40,7 +40,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     try {
       if (!email || !password) {
-        setErrorMsg('Veuillez renseigner votre email et mot de passe.');
+        setErrorMsg('Veuillez renseigner votre nom ou identifiant et votre mot de passe.');
         setIsLoading(false);
         return;
       }
@@ -62,7 +62,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
     const allAccounts = getAllStaffAccounts();
     const demo = allAccounts[demoEmail.toLowerCase()];
     if (demo) {
-      setEmail(demo.user.email);
+      setEmail(demo.user.nomComplet.split(' ')[0] || demo.user.email);
       setPassword(demo.password);
       setErrorMsg(null);
       setSuccessMsg(`Identifiants de ${demo.user.nomComplet} pré-remplis.`);
@@ -72,12 +72,15 @@ export const LoginView: React.FC<LoginViewProps> = ({
   return (
     <div style={{
       minHeight: '100vh',
+      width: '100%',
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
       alignItems: 'center',
+      justifyContent: 'flex-start',
       background: 'radial-gradient(circle at 10% 20%, #0f172a 0%, #042f2e 100%)',
-      padding: '24px 16px',
+      padding: '36px 16px 80px',
+      boxSizing: 'border-box',
+      overflowY: 'auto',
       position: 'relative',
       fontFamily: 'system-ui, -apple-system, sans-serif'
     }}>
@@ -107,14 +110,14 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
       {/* Main Container Card */}
       <div style={{
-        maxWidth: '520px',
+        maxWidth: '490px',
         width: '100%',
-        background: 'rgba(15, 23, 42, 0.85)',
+        margin: 'auto 0',
+        background: 'rgba(15, 23, 42, 0.90)',
         backdropFilter: 'blur(16px)',
         borderRadius: '20px',
         border: '1px solid rgba(255, 255, 255, 0.12)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        overflow: 'hidden',
         zIndex: 10
       }}>
         {/* Top Header / Flag & Branding */}
@@ -220,17 +223,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-            {/* Email Field */}
+            {/* Login / Nom de connexion */}
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
-                Adresse Email Professionnelle *
+              <label style={{ display: 'block', fontSize: '0.82rem', color: '#cbd5e1', fontWeight: 600, marginBottom: '6px' }}>
+                Identifiant / Nom de Connexion *
               </label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                <User size={16} color="#64748b" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                 <input
-                  type="email"
+                  type="text"
                   required
-                  placeholder="nom.prenom@sante.gouv.ci"
+                  placeholder="Votre Nom ou email (ex: mister, adama, kone, dr.kone)"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   style={{
@@ -245,6 +248,9 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   }}
                 />
               </div>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                Connectez-vous simplement avec votre <strong>Nom</strong> ou votre email.
+              </span>
             </div>
 
             {/* Password Field */}
