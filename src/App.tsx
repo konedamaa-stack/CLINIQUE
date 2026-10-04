@@ -9,6 +9,7 @@ import { ImplementationPlanView } from './components/ImplementationPlanView';
 import { AppointmentsView } from './components/AppointmentsView';
 import { LoginView } from './components/LoginView';
 import { SuperAdminView } from './components/SuperAdminView';
+import { ClinicTeamView } from './components/ClinicTeamView';
 import type { FicheConsultation, TypePopulation } from './types/clinical';
 import type { AuthUser } from './types/auth';
 import type { ClinicStructure } from './types/clinic';
@@ -54,7 +55,7 @@ export const App: React.FC = () => {
     return INITIAL_MOCK_FICHES;
   });
 
-  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin'>(() => {
+  const [currentTab, setCurrentTab] = useState<'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin' | 'team'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.replace('#', '');
       if (hash === 'superadmin' || hash === 'admin') return 'superadmin';
@@ -506,6 +507,14 @@ export const App: React.FC = () => {
             onUpdateClinic={handleUpdateClinic}
             onSelectClinicForControl={handleSelectClinicForControl}
             fiches={fiches}
+          />
+        )}
+
+        {/* TAB 8: ÉQUIPE MÉDICALE & GESTION DU PERSONNEL PAR LE DIRECTEUR */}
+        {currentTab === 'team' && (
+          <ClinicTeamView
+            selectedSite={selectedSite}
+            currentUser={currentUser}
           />
         )}
       </main>

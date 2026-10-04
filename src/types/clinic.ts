@@ -27,6 +27,7 @@ export interface ClinicStructure {
   typeStructure: ClinicType;
   statut: ClinicStatus;
   directeurNom: string;
+  directeurPassword?: string;
   telephone: string;
   email: string;
   adresse: string;

@@ -87,6 +87,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [newAdresse, setNewAdresse] = useState('');
   const [newSubdomain, setNewSubdomain] = useState('');
   const [newCustomDomain, setNewCustomDomain] = useState('');
+  const [newDirecteurPassword, setNewDirecteurPassword] = useState('Password123!');
 
   // Filtering
   const filteredClinics = clinics.filter((c) => {
@@ -125,6 +126,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       ? (newSubdomain.includes('.') ? newSubdomain.toLowerCase() : `${newSubdomain.toLowerCase()}.clinique.ci`) 
       : `${baseSlug}.clinique.ci`;
 
+    const cleanDirectorEmail = (newEmail || `${baseSlug}.dir@sante.gouv.ci`).trim().toLowerCase();
+    const cleanDirectorPassword = newDirecteurPassword.trim() || 'Password123!';
+
     const created: ClinicStructure = {
       id: 'clinic-' + Date.now(),
       nom: newNom,
@@ -133,9 +137,10 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       regionSanitaire: newRegion,
       typeStructure: newType,
       statut: 'actif',
-      directeurNom: newDirecteur || 'Personnel Médical en Chef',
+      directeurNom: newDirecteur || 'Directeur / Médecin Chef',
+      directeurPassword: cleanDirectorPassword,
       telephone: newTelephone || '+225 27 00 00 00',
-      email: newEmail || 'contact@sante.gouv.ci',
+      email: cleanDirectorEmail,
       adresse: newAdresse || 'Côte d\'Ivoire',
       dateCreation: new Date().toISOString().split('T')[0],
       personnelMedicalCount: 8,
@@ -158,6 +163,19 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     };
 
     onAddClinic(created);
+
+    // Automatiquement créer et activer le compte Administrateur / Directeur pour cet établissement
+    const directorUser: AuthUser = {
+      id: 'director-' + Date.now(),
+      email: cleanDirectorEmail,
+      nomComplet: newDirecteur.trim() || `Directeur ${created.nom}`,
+      role: 'administrateur',
+      structureNom: created.nom,
+      numeroMatricule: `DIR-MSHP-${Math.floor(1000 + Math.random() * 9000)}`
+    };
+    saveSuperAdminStaffAccount(cleanDirectorEmail, cleanDirectorPassword, directorUser);
+    setStaffAccounts(getAllStaffAccounts());
+
     setIsAddModalOpen(false);
     // Reset
     setNewNom('');
@@ -168,6 +186,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     setNewAdresse('');
     setNewSubdomain('');
     setNewCustomDomain('');
+    setNewDirecteurPassword('Password123!');
   };
 
   const handleOpenDomainModal = (clinic: ClinicStructure) => {
@@ -633,10 +652,28 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                       </span>
                     </td>
 
-                    {/* Directeur & Tel */}
+                    {/* Directeur & Compte Administrateur */}
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontWeight: 600, color: '#334155', fontSize: '0.85rem' }}>{c.directeurNom}</div>
-                      <div style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '2px' }}>{c.telephone}</div>
+                      <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.88rem' }}>{c.directeurNom}</div>
+                      <div style={{ color: '#0369a1', fontSize: '0.78rem', marginTop: '2px', fontFamily: 'monospace', fontWeight: 600 }}>
+                        {c.email}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '0.72rem', background: '#ffedd5', color: '#c2410c', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                          Pass: {c.directeurPassword || 'Password123!'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`Établissement: ${c.nom}\nDirecteur: ${c.directeurNom}\nLogin: ${c.email}\nMot de passe: ${c.directeurPassword || 'Password123!'}`);
+                            setStaffFeedback({ type: 'success', message: `Identifiants du Directeur (${c.directeurNom}) copiés !` });
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '0 2px' }}
+                          title="Copier les identifiants du Directeur"
+                        >
+                          <Copy size={12} />
+                        </button>
+                      </div>
                     </td>
 
                     {/* Statut Réseau */}
@@ -911,29 +948,62 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                    Email Institutionnel
+                    Adresse / Repère Géographique
                   </label>
                   <input
-                    type="email"
-                    placeholder="direction@sante.gouv.ci"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
+                    type="text"
+                    placeholder="Ex: Rue des Brasseries, en face de la Mairie"
+                    value={newAdresse}
+                    onChange={(e) => setNewAdresse(e.target.value)}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                  Adresse / Repère Géographique
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Rue des Brasseries, en face de la Mairie"
-                  value={newAdresse}
-                  onChange={(e) => setNewAdresse(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', boxSizing: 'border-box' }}
-                />
+              {/* Compte d'accès du Directeur / Médecin Chef */}
+              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '10px', padding: '14px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  🔑 Compte d'Accès du Directeur de la Clinique (Créé par le Super Admin)
+                </span>
+                <p style={{ margin: '0 0 10px 0', fontSize: '0.78rem', color: '#9a3412', lineHeight: 1.4 }}>
+                  Le Super Admin attribue ici le login et mot de passe du Directeur. À son tour, le Directeur se connectera pour créer et administrer les soignants (médecins, infirmiers, agents) de son établissement.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Login du Directeur (Email de connexion) *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="ex: directeur.csu@sante.gouv.ci"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>
+                        Mot de passe du Directeur *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setNewDirecteurPassword(`Dir-${Math.floor(1000 + Math.random() * 9000)}@CI`)}
+                        style={{ background: 'none', border: 'none', color: '#ea580c', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        ⚡ Générer
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={newDirecteurPassword}
+                      onChange={(e) => setNewDirecteurPassword(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontFamily: 'monospace', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Multi-Tenant Domain Configuration */}

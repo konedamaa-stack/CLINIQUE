@@ -15,8 +15,8 @@ import {
 import type { AuthUser } from '../types/auth';
 
 interface HeaderProps {
-  currentTab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin';
-  onSelectTab: (tab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin') => void;
+  currentTab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin' | 'team';
+  onSelectTab: (tab: 'dashboard' | 'consultation' | 'registry' | 'appointments' | 'protocols' | 'plan' | 'superadmin' | 'team') => void;
   selectedSite: string;
   onSelectSite: (site: string) => void;
   casPresumesTBCount: number;
@@ -441,6 +441,30 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <ShieldAlert size={17} />
           Plan d'Implémentation 2026
+        </button>
+
+        {/* TAB ÉQUIPE MÉDICALE (Gestion du personnel par le Directeur) */}
+        <button
+          id="nav-tab-team"
+          onClick={() => onSelectTab('team')}
+          style={{
+            padding: '10px 16px',
+            background: currentTab === 'team' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+            border: 'none',
+            borderBottom: currentTab === 'team' ? '3px solid #2dd4bf' : '3px solid transparent',
+            color: currentTab === 'team' ? '#ffffff' : '#cbd5e1',
+            fontWeight: currentTab === 'team' ? 700 : 500,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            borderRadius: '6px 6px 0 0',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <Users size={17} />
+          <span>Équipe Médicale (Directeur)</span>
         </button>
 
         {/* TAB SUPER ADMIN */}
