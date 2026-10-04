@@ -21,7 +21,11 @@ import {
   upsertConsultationToSupabase,
   deleteConsultationFromSupabase,
   getCurrentAuthUser,
-  signOutUser
+  signOutUser,
+  fetchClinicsFromSupabase,
+  syncClinicsToSupabase,
+  fetchStaffAccountsFromSupabase,
+  getSuperAdminStaffAccounts
 } from './lib/supabase';
 
 export const App: React.FC = () => {
@@ -75,6 +79,9 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     localStorage.setItem('clinique_structures_ci', JSON.stringify(clinics));
+    if (isSupabaseConfigured) {
+      syncClinicsToSupabase(clinics).catch(console.warn);
+    }
   }, [clinics]);
 
   // Synchronisation de l'URL hash avec l'onglet courant
@@ -146,12 +153,36 @@ export const App: React.FC = () => {
   // Sync with Supabase on mount if configured
   useEffect(() => {
     if (isSupabaseConfigured) {
+      // 1. Charger les consultations
       fetchConsultationsFromSupabase().then(({ data, error }) => {
         if (data && data.length > 0) {
           setFiches(data);
           showToast(`✓ ${data.length} consultations chargées depuis Supabase`);
         } else if (error) {
           console.warn('Supabase fetch notice:', error);
+        }
+      });
+
+      // 2. Charger les établissements du Cloud
+      fetchClinicsFromSupabase().then((cloudClinics) => {
+        if (cloudClinics && cloudClinics.length > 0) {
+          setClinics((prev) => {
+            const map = new Map<string, ClinicStructure>();
+            prev.forEach(c => map.set(c.id, c));
+            cloudClinics.forEach(c => map.set(c.id, c));
+            const merged = Array.from(map.values());
+            localStorage.setItem('clinique_structures_ci', JSON.stringify(merged));
+            return merged;
+          });
+        }
+      });
+
+      // 3. Charger les comptes praticiens du Cloud
+      fetchStaffAccountsFromSupabase().then((cloudAccounts) => {
+        if (cloudAccounts && Object.keys(cloudAccounts).length > 0) {
+          const localAccounts = getSuperAdminStaffAccounts();
+          const mergedAccounts = { ...localAccounts, ...cloudAccounts };
+          localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(mergedAccounts));
         }
       });
     }

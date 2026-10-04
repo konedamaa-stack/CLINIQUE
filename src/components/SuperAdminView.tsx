@@ -348,12 +348,13 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
 
   const handleCreateStaffAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStaffNom || !newStaffEmail || !newStaffPassword) {
-      setStaffFeedback({ type: 'error', message: 'Veuillez renseigner le nom, l\'email et le mot de passe.' });
+    if (!newStaffNom.trim() || !newStaffPassword.trim()) {
+      setStaffFeedback({ type: 'error', message: 'Veuillez renseigner au moins le nom complet et le mot de passe.' });
       return;
     }
 
-    const cleanEmail = newStaffEmail.trim().toLowerCase();
+    const defaultIdentifier = newStaffNom.trim().toLowerCase().replace(/[^a-z0-9]/g, '') || 'staff';
+    const cleanEmail = (newStaffEmail.trim() || `${defaultIdentifier}@clinique.ci`).toLowerCase();
     const newUser: AuthUser = {
       id: 'staff-' + Date.now(),
       email: cleanEmail,
@@ -367,7 +368,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     setStaffAccounts(getAllStaffAccounts());
     setStaffFeedback({ 
       type: 'success', 
-      message: `Compte créé avec succès pour ${newUser.nomComplet} (${newUser.role === 'medecin' ? 'Médecin' : newUser.role === 'administrateur' ? 'Directeur / Admin' : newUser.role}) !` 
+      message: `Compte créé avec succès pour ${newUser.nomComplet} ! Connexion possible directement avec le nom "${newUser.nomComplet}" et son mot de passe.` 
     });
 
     // Reset fields
@@ -1756,12 +1757,11 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                        Email Professionnel (Identifiant de Connexion) *
+                        Email ou Identifiant (Optionnel)
                       </label>
                       <input
-                        type="email"
-                        required
-                        placeholder="ex: dr.kouame@sante.gouv.ci"
+                        type="text"
+                        placeholder="Optionnel (ex: salifou ou salifou@clinique.ci)"
                         value={newStaffEmail}
                         onChange={(e) => setNewStaffEmail(e.target.value)}
                         style={{
@@ -1773,6 +1773,9 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                           boxSizing: 'border-box'
                         }}
                       />
+                      <small style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginTop: '4px' }}>
+                        Le praticien pourra se connecter avec son Nom ou cet identifiant.
+                      </small>
                     </div>
 
                     <div>

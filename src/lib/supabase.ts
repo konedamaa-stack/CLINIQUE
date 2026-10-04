@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { FicheConsultation } from '../types/clinical';
+import type { ClinicStructure } from '../types/clinic';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://kmamycrltmhbhidpwlzx.supabase.co';
 const supabaseAnonKey = 
@@ -214,18 +215,170 @@ export const DEMO_USERS: Record<string, { password: string; user: AuthUser }> = 
 };
 
 /**
- * Récupère les comptes créés par le Super Administrateur
+ * Synchronise les comptes praticiens dans le Cloud Supabase (Partagé entre tous les appareils)
+ */
+export async function syncStaffAccountsToSupabase(accounts: Record<string, { password: string; user: AuthUser }>): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const payload = {
+      id: 'system_staff_registry',
+      code_patient: 'SYSTEM_ACCOUNTS',
+      num_ordre: '0001',
+      date_consultation: new Date().toISOString().split('T')[0],
+      nom: 'SYSTEM',
+      prenoms: 'STAFF_REGISTRY',
+      sexe: 'M',
+      age: 0,
+      tranche_age: 'adultes',
+      type_population: 'general',
+      protection_sociale: 'aucune',
+      tb_presume: false,
+      decision_clinique: 'RAS',
+      statut_suivi: 'termine',
+      site_nom: 'SYSTEM_CENTRAL',
+      raw_data: accounts,
+      updated_at: new Date().toISOString()
+    };
+    await supabase.from('consultations').upsert(payload, { onConflict: 'id' });
+  } catch (err) {
+    console.warn('Sync staff to Supabase error:', err);
+  }
+}
+
+/**
+ * Récupère les comptes praticiens depuis le Cloud Supabase
+ */
+export async function fetchStaffAccountsFromSupabase(): Promise<Record<string, { password: string; user: AuthUser }>> {
+  if (!isSupabaseConfigured) return {};
+  try {
+    const { data, error } = await supabase
+      .from('consultations')
+      .select('raw_data')
+      .eq('id', 'system_staff_registry')
+      .maybeSingle();
+
+    if (!error && data?.raw_data && typeof data.raw_data === 'object') {
+      return data.raw_data as Record<string, { password: string; user: AuthUser }>;
+    }
+  } catch (err) {
+    console.warn('Fetch staff from Supabase error:', err);
+  }
+  return {};
+}
+
+/**
+ * Synchronise les établissements dans le Cloud Supabase
+ */
+export async function syncClinicsToSupabase(clinics: ClinicStructure[]): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    const payload = {
+      id: 'system_clinics_registry',
+      code_patient: 'SYSTEM_CLINICS',
+      num_ordre: '0002',
+      date_consultation: new Date().toISOString().split('T')[0],
+      nom: 'SYSTEM',
+      prenoms: 'CLINICS_REGISTRY',
+      sexe: 'M',
+      age: 0,
+      tranche_age: 'adultes',
+      type_population: 'general',
+      protection_sociale: 'aucune',
+      tb_presume: false,
+      decision_clinique: 'RAS',
+      statut_suivi: 'termine',
+      site_nom: 'SYSTEM_CENTRAL',
+      raw_data: clinics,
+      updated_at: new Date().toISOString()
+    };
+    await supabase.from('consultations').upsert(payload, { onConflict: 'id' });
+  } catch (err) {
+    console.warn('Sync clinics to Supabase error:', err);
+  }
+}
+
+/**
+ * Récupère les établissements depuis le Cloud Supabase
+ */
+export async function fetchClinicsFromSupabase(): Promise<ClinicStructure[]> {
+  if (!isSupabaseConfigured) return [];
+  try {
+    const { data, error } = await supabase
+      .from('consultations')
+      .select('raw_data')
+      .eq('id', 'system_clinics_registry')
+      .maybeSingle();
+
+    if (!error && data?.raw_data && Array.isArray(data.raw_data)) {
+      return data.raw_data as ClinicStructure[];
+    }
+  } catch (err) {
+    console.warn('Fetch clinics from Supabase error:', err);
+  }
+  return [];
+}
+
+/**
+ * Récupère les comptes créés par le Super Administrateur (localStorage + Cliniques créées)
  */
 export function getSuperAdminStaffAccounts(): Record<string, { password: string; user: AuthUser }> {
+  const accounts: Record<string, { password: string; user: AuthUser }> = {};
+
   try {
     const saved = localStorage.getItem('clinique_superadmin_staff_accounts');
     if (saved) {
-      return JSON.parse(saved);
+      Object.assign(accounts, JSON.parse(saved));
     }
   } catch (e) {
     console.error('Erreur lecture comptes praticiens:', e);
   }
-  return {};
+
+  // Extraire également TOUS les directeurs des cliniques enregistrées dans le système
+  try {
+    const rawClinics = localStorage.getItem('clinique_structures_ci');
+    if (rawClinics) {
+      const parsedClinics = JSON.parse(rawClinics);
+      if (Array.isArray(parsedClinics)) {
+        parsedClinics.forEach((c: any) => {
+          if (c.directeurNom) {
+            const pwd = c.directeurPassword || 'Password123!';
+            const dirUser: AuthUser = {
+              id: 'director-' + (c.id || Date.now()),
+              email: c.email || `${normalizeLogin(c.directeurNom)}@clinique.ci`,
+              nomComplet: c.directeurNom,
+              role: 'administrateur',
+              structureNom: c.nom,
+              numeroMatricule: `DIR-${c.codeDistrict || 'CI'}`
+            };
+
+            const rawNom = c.directeurNom.toLowerCase();
+            accounts[rawNom] = { password: pwd, user: dirUser };
+            const normNom = normalizeLogin(rawNom);
+            if (normNom) accounts[normNom] = { password: pwd, user: dirUser };
+
+            if (c.email) {
+              accounts[c.email.toLowerCase()] = { password: pwd, user: dirUser };
+              accounts[normalizeLogin(c.email)] = { password: pwd, user: dirUser };
+            }
+
+            const words = rawNom.replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '').split(/\s+/);
+            words.forEach((w: string) => {
+              const cleanW = w.trim();
+              if (cleanW.length >= 2) {
+                accounts[cleanW] = { password: pwd, user: dirUser };
+                const normW = normalizeLogin(cleanW);
+                if (normW) accounts[normW] = { password: pwd, user: dirUser };
+              }
+            });
+          }
+        });
+      }
+    }
+  } catch (e) {
+    console.error('Erreur extraction directeurs depuis clinique_structures_ci:', e);
+  }
+
+  return accounts;
 }
 
 /**
@@ -251,7 +404,7 @@ export function saveSuperAdminStaffAccount(identifier: string, password: string,
       accounts[normNom] = { password, user };
     }
 
-    // Indexer chaque mot du nom (ex: "souleymane", "kone", "yao", "amlan")
+    // Indexer chaque mot du nom (ex: "salifou", "souleymane", "kone", "yao", "amlan")
     const words = rawNom
       .replace(/^(dr\.?|inf\.?|agent|prof\.?)\s+/i, '')
       .split(/\s+/);
@@ -274,6 +427,8 @@ export function saveSuperAdminStaffAccount(identifier: string, password: string,
   }
 
   localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
+  // Sauvegarde Cloud Supabase immédiate (accessible depuis n'importe quel ordinateur / navigateur)
+  syncStaffAccountsToSupabase(accounts).catch(console.error);
 }
 
 /**
@@ -287,6 +442,7 @@ export function deleteSuperAdminStaffAccount(email: string): void {
     delete accounts[cleanKey.split('@')[0]];
   }
   localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(accounts));
+  syncStaffAccountsToSupabase(accounts).catch(console.error);
 }
 
 /**
@@ -439,6 +595,80 @@ export async function signInWithEmail(identifier: string, password: string): Pro
       }
     } catch (err: any) {
       console.warn('Supabase auth warning:', err);
+    }
+  }
+
+  // 4. Si non trouvé en local, vérifier dans le Cloud Supabase (comptes ou cliniques créés depuis un autre navigateur)
+  if (isSupabaseConfigured) {
+    try {
+      const cloudAccounts = await fetchStaffAccountsFromSupabase();
+      if (Object.keys(cloudAccounts).length > 0) {
+        // Enregistrer en cache local
+        const currentSaved = getSuperAdminStaffAccounts();
+        const merged = { ...currentSaved, ...cloudAccounts };
+        localStorage.setItem('clinique_superadmin_staff_accounts', JSON.stringify(merged));
+
+        for (const [key, account] of Object.entries(cloudAccounts)) {
+          const rawNom = account.user.nomComplet.toLowerCase();
+          const normNom = normalizeLogin(rawNom);
+          const userEmail = account.user.email.toLowerCase();
+          const matches = (
+            key.toLowerCase() === cleanId ||
+            normalizeLogin(key) === normInput ||
+            userEmail === cleanId ||
+            rawNom === cleanId ||
+            normNom === normInput ||
+            (normInput.length >= 3 && normNom.includes(normInput)) ||
+            rawNom.split(/\s+/).some(part => normalizeLogin(part) === normInput)
+          );
+
+          if (matches) {
+            if (isPasswordMatch(account.password, password)) {
+              localStorage.setItem('clinique_auth_user', JSON.stringify(account.user));
+              return { user: account.user, error: null };
+            } else {
+              return { user: null, error: 'Mot de passe incorrect pour cet identifiant.' };
+            }
+          }
+        }
+      }
+
+      // Vérifier également les directeurs des cliniques enregistrées dans le cloud
+      const cloudClinics = await fetchClinicsFromSupabase();
+      for (const c of cloudClinics) {
+        if (c.directeurNom) {
+          const rawNom = c.directeurNom.toLowerCase();
+          const normNom = normalizeLogin(rawNom);
+          const email = (c.email || '').toLowerCase();
+          const matches = (
+            rawNom === cleanId ||
+            normNom === normInput ||
+            email === cleanId ||
+            (normInput.length >= 3 && normNom.includes(normInput)) ||
+            rawNom.split(/\s+/).some(part => normalizeLogin(part) === normInput)
+          );
+
+          if (matches) {
+            const pwd = c.directeurPassword || 'Password123!';
+            if (isPasswordMatch(pwd, password)) {
+              const dirUser: AuthUser = {
+                id: 'director-' + c.id,
+                email: c.email || `${normInput}@clinique.ci`,
+                nomComplet: c.directeurNom,
+                role: 'administrateur',
+                structureNom: c.nom,
+                numeroMatricule: `DIR-${c.codeDistrict || 'CI'}`
+              };
+              localStorage.setItem('clinique_auth_user', JSON.stringify(dirUser));
+              return { user: dirUser, error: null };
+            } else {
+              return { user: null, error: 'Mot de passe incorrect pour cet identifiant.' };
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erreur cloud auth lookup:', e);
     }
   }
 
