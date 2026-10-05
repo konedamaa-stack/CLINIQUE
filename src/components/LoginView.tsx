@@ -14,16 +14,21 @@ import {
   RefreshCw 
 } from 'lucide-react';
 import type { AuthUser } from '../types/auth';
+import type { ClinicStructure } from '../types/clinic';
 import { signInWithEmail, getAllStaffAccounts } from '../lib/supabase';
 
 interface LoginViewProps {
   onLoginSuccess: (user: AuthUser) => void;
   onContinueAsGuest: () => void;
+  activeClinic?: ClinicStructure | null;
+  clinics?: ClinicStructure[];
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
-  onContinueAsGuest
+  onContinueAsGuest,
+  activeClinic,
+  clinics = []
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -57,6 +62,36 @@ export const LoginView: React.FC<LoginViewProps> = ({
       if (error) {
         setErrorMsg(error);
       } else if (user) {
+        // Contrôle strict de domaine / sous-domaine (Multi-Tenant)
+        const isSuperAdmin = user.role === 'super_admin' || user.email?.toLowerCase() === 'konedamaa@gmail.com';
+        
+        if (!isSuperAdmin && activeClinic) {
+          const userSite = (user.structureNom || '').trim().toLowerCase();
+          const activeClinicNom = (activeClinic.nom || '').trim().toLowerCase();
+          
+          const isAllowed = userSite === activeClinicNom || 
+                            userSite.includes(activeClinicNom) || 
+                            activeClinicNom.includes(userSite);
+
+          if (!isAllowed) {
+            // Trouver la clinique légitime de l'utilisateur pour lui fournir son lien direct
+            const userClinic = clinics?.find(c => {
+              const cNom = (c.nom || '').trim().toLowerCase();
+              return cNom === userSite || cNom.includes(userSite) || userSite.includes(cNom);
+            });
+
+            const userDomain = userClinic?.customDomain || userClinic?.subdomain || (userClinic?.slug ? `${userClinic.slug}.cliniquegenerale.xyz` : null);
+
+            setErrorMsg(
+              `⛔ Accès non autorisé sur ce sous-domaine.\n\n` +
+              `Ce compte (${user.nomComplet}) est rattaché à « ${user.structureNom} ».\n` +
+              (userDomain ? `👉 Veuillez vous connecter sur l'espace dédié de votre établissement : https://${userDomain}` : `👉 Veuillez utiliser l'adresse web dédiée à votre clinique.`)
+            );
+            setIsLoading(false);
+            return;
+          }
+        }
+
         onLoginSuccess(user);
       }
     } catch (err: any) {
@@ -172,6 +207,42 @@ export const LoginView: React.FC<LoginViewProps> = ({
             Ministère de la Santé, de l'Hygiène Publique et de la CMU • Côte d'Ivoire
           </p>
         </div>
+
+        {/* Dedicated Clinic Subdomain Indicator */}
+        {activeClinic && (
+          <div style={{
+            padding: '12px 20px',
+            background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.2) 0%, rgba(15, 118, 110, 0.2) 100%)',
+            borderBottom: '1px solid rgba(20, 184, 166, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.2rem' }}>🏥</span>
+              <div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#5eead4' }}>
+                  {activeClinic.nom}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                  Portail Médical Dédié • {activeClinic.regionSanitaire || 'Côte d\'Ivoire'}
+                </div>
+              </div>
+            </div>
+            <span style={{
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              background: 'rgba(56, 189, 248, 0.2)',
+              color: '#38bdf8',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              border: '1px solid rgba(56, 189, 248, 0.3)'
+            }}>
+              Accès Établissement
+            </span>
+          </div>
+        )}
 
         {/* Security Warning / Super Admin Access Policy */}
         <div style={{

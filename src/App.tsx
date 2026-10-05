@@ -147,8 +147,8 @@ export const App: React.FC = () => {
   }, [currentTab, currentUser]);
 
   // Multi-tenant automatic domain / subdomain resolution
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const currentDomainClinic = useMemo(() => {
+    if (typeof window === 'undefined') return null;
 
     const hostname = window.location.hostname.toLowerCase();
     const searchParams = new URLSearchParams(window.location.search);
@@ -167,10 +167,7 @@ export const App: React.FC = () => {
           )
         )
       );
-      if (matched && matched.nom) {
-        setSelectedSite(matched.nom);
-        return;
-      }
+      if (matched) return matched;
     }
 
     // 2. Check full hostname in production (e.g. alama.cliniquegenerale.xyz or treichville.clinique.ci)
@@ -178,7 +175,7 @@ export const App: React.FC = () => {
       const parts = hostname.split('.');
       const subPrefix = parts.length > 2 ? parts[0].toLowerCase() : '';
 
-      const matched = clinics.find(c => {
+      return clinics.find(c => {
         if (!c) return false;
         const custom = c.customDomain?.toLowerCase();
         const sub = c.subdomain?.toLowerCase();
@@ -190,17 +187,39 @@ export const App: React.FC = () => {
           (subPrefix && sub && sub.startsWith(subPrefix + '.')) ||
           (subPrefix && c.nom && c.nom.toLowerCase().includes(subPrefix))
         );
-      });
-      if (matched && matched.nom) {
-        setSelectedSite(matched.nom);
-      }
+      }) || null;
     }
+
+    return null;
   }, [clinics]);
+
+  useEffect(() => {
+    if (currentDomainClinic && currentDomainClinic.nom) {
+      setSelectedSite(currentDomainClinic.nom);
+    }
+  }, [currentDomainClinic]);
 
   // Check auth on mount
   useEffect(() => {
     getCurrentAuthUser().then((user) => {
       if (user) {
+        const isSuperAdmin = user.role === 'super_admin' || user.email?.toLowerCase() === 'konedamaa@gmail.com';
+
+        // Sécurité Multi-Tenant : Déconnexion automatique si la session ne correspond pas à la clinique du sous-domaine
+        if (!isSuperAdmin && currentDomainClinic) {
+          const userSite = (user.structureNom || '').trim().toLowerCase();
+          const clinicNom = (currentDomainClinic.nom || '').trim().toLowerCase();
+          const isAllowed = userSite === clinicNom || userSite.includes(clinicNom) || clinicNom.includes(userSite);
+
+          if (!isAllowed) {
+            signOutUser().then(() => {
+              setCurrentUser(null);
+              setIsAuthLoading(false);
+            });
+            return;
+          }
+        }
+
         setCurrentUser(user);
         if (user.structureNom) {
           setSelectedSite(user.structureNom);
@@ -211,7 +230,7 @@ export const App: React.FC = () => {
       }
       setIsAuthLoading(false);
     });
-  }, []);
+  }, [currentDomainClinic]);
 
   // Sync with Supabase on mount if configured
   useEffect(() => {
@@ -271,6 +290,20 @@ export const App: React.FC = () => {
   }, [fiches]);
 
   const handleLoginSuccess = (user: AuthUser) => {
+    const isSuperAdmin = user.role === 'super_admin' || user.email === 'konedamaa@gmail.com';
+
+    // Sécurité multi-tenant : vérifier que l'utilisateur a le droit d'accéder au sous-domaine
+    if (!isSuperAdmin && currentDomainClinic) {
+      const userSite = (user.structureNom || '').trim().toLowerCase();
+      const clinicNom = (currentDomainClinic.nom || '').trim().toLowerCase();
+      const isAllowed = userSite === clinicNom || userSite.includes(clinicNom) || clinicNom.includes(userSite);
+
+      if (!isAllowed) {
+        showToast(`⛔ Accès refusé : Ce compte appartient à « ${user.structureNom} »`);
+        return;
+      }
+    }
+
     setCurrentUser(user);
     setIsGuestMode(false);
     setShowLoginModal(false);
@@ -278,7 +311,7 @@ export const App: React.FC = () => {
       setSelectedSite(user.structureNom);
     }
     // Basculer automatiquement et directement sur le tableau de bord Super Admin
-    if (user.role === 'super_admin' || user.email === 'konedamaa@gmail.com') {
+    if (isSuperAdmin) {
       setCurrentTab('superadmin');
       window.location.hash = 'superadmin';
       showToast(`👑 Accès Super Administrateur National - Bienvenue ${user.nomComplet}`);
@@ -538,6 +571,8 @@ export const App: React.FC = () => {
           setIsGuestMode(true);
           showToast('Mode Invité activé. Vous pouvez vous connecter à tout moment.');
         }}
+        activeClinic={currentDomainClinic}
+        clinics={clinics}
       />
     );
   }
@@ -725,6 +760,8 @@ export const App: React.FC = () => {
             <LoginView
               onLoginSuccess={handleLoginSuccess}
               onContinueAsGuest={() => setShowLoginModal(false)}
+              activeClinic={currentDomainClinic}
+              clinics={clinics}
             />
           </div>
         </div>

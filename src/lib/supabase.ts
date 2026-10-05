@@ -187,10 +187,10 @@ const USER_AGENT_YAO: AuthUser = {
 export const USER_SALIFOU: AuthUser = {
   id: 'staff-salifou-dir',
   email: 'salifou@clinique.ci',
-  nomComplet: 'Salifou (Directeur / Praticien)',
+  nomComplet: 'Salifou (Directeur)',
   role: 'administrateur',
-  structureNom: 'Établissement Sanitaire CI',
-  numeroMatricule: 'DIR-SALIFOU-01'
+  structureNom: 'Clinique Alfadjr',
+  numeroMatricule: 'DIR-ALFADJR-01'
 };
 
 // Comptes configurés accessibles par NOM simplement ou email
