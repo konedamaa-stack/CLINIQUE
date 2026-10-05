@@ -30,13 +30,19 @@ export async function fetchConsultationsFromSupabase(): Promise<{ data: FicheCon
 
     if (error) throw error;
 
-    // Convert raw_data or database row to FicheConsultation
-    const fiches: FicheConsultation[] = (data || []).map((row: any) => {
-      if (row.raw_data) {
-        return row.raw_data as FicheConsultation;
-      }
-      return row as FicheConsultation;
-    });
+    // Convert raw_data or database row to FicheConsultation, excluding internal system rows
+    const fiches: FicheConsultation[] = (data || [])
+      .filter((row: any) => row.id && !String(row.id).startsWith('system_'))
+      .map((row: any) => {
+        if (row.raw_data && typeof row.raw_data === 'object' && (row.raw_data as any).admin) {
+          return row.raw_data as FicheConsultation;
+        }
+        if (row.admin) {
+          return row as FicheConsultation;
+        }
+        return null;
+      })
+      .filter((f): f is FicheConsultation => Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom));
 
     return { data: fiches, error: null };
   } catch (err) {

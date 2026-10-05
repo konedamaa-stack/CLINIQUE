@@ -442,37 +442,41 @@ export function calculateKPIsFromFiches(fiches: FicheConsultation[]): KPIStats {
     '50 ans et plus': 0
   };
 
-  for (const f of fiches) {
-    if (checkFicheCompletude(f)) completes++;
-    if (typeof f.tb.tbPresume === 'boolean') depistesTB++;
-    if (f.triage.poidsKg && f.triage.tailleCm) constantesMesurees++;
+  const validFiches = (fiches || []).filter(
+    (f): f is FicheConsultation => Boolean(f && f.admin && f.triage && f.tb && f.orientation)
+  );
 
-    if (f.tb.tbPresume) {
+  for (const f of validFiches) {
+    if (checkFicheCompletude(f)) completes++;
+    if (f.tb && typeof f.tb.tbPresume === 'boolean') depistesTB++;
+    if (f.triage && f.triage.poidsKg && f.triage.tailleCm) constantesMesurees++;
+
+    if (f.tb && f.tb.tbPresume) {
       casPresumesTB++;
       if (f.tb.prelevementCrachatEffectue || f.tb.examenTBPropose !== 'aucun') {
         casPresumesTBTestes++;
       }
     }
 
-    if (f.orientation.decisionClinique === 'reference_hopital') {
+    if (f.orientation && f.orientation.decisionClinique === 'reference_hopital') {
       patientsReferes++;
-      if (f.suivi.statutSuivi === 'refere_confirme') {
+      if (f.suivi && f.suivi.statutSuivi === 'refere_confirme') {
         patientsReferesConfirmes++;
       }
     }
 
-    if (f.triage.classificationHTA === 'hta_grade_2' || f.triage.classificationHTA === 'hta_grade_3') {
+    if (f.triage && (f.triage.classificationHTA === 'hta_grade_2' || f.triage.classificationHTA === 'hta_grade_3')) {
       casHTAGrade2Ou3++;
     }
 
-    if (f.triage.classificationIMC === 'denutrition_severe' || f.triage.classificationPB === 'mas') {
+    if (f.triage && (f.triage.classificationIMC === 'denutrition_severe' || f.triage.classificationPB === 'mas')) {
       casMalnutritionSevere++;
     }
 
-    const pop = f.admin.typePopulation || 'population_generale';
+    const pop = (f.admin && f.admin.typePopulation) || 'population_generale';
     repartitionPop[pop] = (repartitionPop[pop] || 0) + 1;
 
-    const ageT = f.admin.trancheAge || '25-49 ans';
+    const ageT = (f.admin && f.admin.trancheAge) || '25-49 ans';
     repartitionAge[ageT] = (repartitionAge[ageT] || 0) + 1;
   }
 

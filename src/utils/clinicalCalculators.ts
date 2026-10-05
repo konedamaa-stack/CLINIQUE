@@ -261,6 +261,10 @@ export function evaluateSuspicionTB(
  * Vérifie si la fiche de consultation est complète
  */
 export function checkFicheCompletude(fiche: FicheConsultation): boolean {
+  if (!fiche || !fiche.admin || !fiche.triage || !fiche.tb || !fiche.orientation) {
+    return false;
+  }
+
   const adminOk = !!(
     fiche.admin.nom &&
     fiche.admin.prenoms &&

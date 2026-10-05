@@ -51,7 +51,11 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('clinique_consultations_ci');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((f: any) => Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom));
+          if (valid.length > 0) return valid;
+        }
       } catch (e) {
         console.error('Failed to parse saved fiches:', e);
       }
@@ -104,31 +108,41 @@ export const App: React.FC = () => {
     // 1. Check URL query param (for testing in local dev or Vercel preview URLs)
     if (domainParam) {
       const matched = clinics.find(c => 
-        c.slug?.toLowerCase() === domainParam ||
-        c.subdomain?.toLowerCase() === domainParam ||
-        c.subdomain?.toLowerCase().startsWith(domainParam + '.') ||
-        c.customDomain?.toLowerCase() === domainParam ||
-        c.nom.toLowerCase().includes(domainParam)
+        Boolean(
+          c && (
+            c.slug?.toLowerCase() === domainParam ||
+            c.subdomain?.toLowerCase() === domainParam ||
+            c.subdomain?.toLowerCase().startsWith(domainParam + '.') ||
+            c.customDomain?.toLowerCase() === domainParam ||
+            (c.nom && c.nom.toLowerCase().includes(domainParam))
+          )
+        )
       );
-      if (matched) {
+      if (matched && matched.nom) {
         setSelectedSite(matched.nom);
         return;
       }
     }
 
-    // 2. Check full hostname in production (e.g. treichville.clinique.ci or csu-treichville.ci)
+    // 2. Check full hostname in production (e.g. alama.cliniquegenerale.xyz or treichville.clinique.ci)
     if (hostname !== 'localhost' && hostname !== '127.0.0.1' && !hostname.endsWith('.vercel.app')) {
+      const parts = hostname.split('.');
+      const subPrefix = parts.length > 2 ? parts[0].toLowerCase() : '';
+
       const matched = clinics.find(c => {
+        if (!c) return false;
         const custom = c.customDomain?.toLowerCase();
         const sub = c.subdomain?.toLowerCase();
         const slug = c.slug?.toLowerCase();
-        return (
+        return Boolean(
           (custom && (hostname === custom || hostname === `www.${custom}`)) ||
           (sub && hostname === sub) ||
-          (slug && hostname.startsWith(slug + '.'))
+          (slug && (hostname.startsWith(slug + '.') || subPrefix === slug)) ||
+          (subPrefix && sub && sub.startsWith(subPrefix + '.')) ||
+          (subPrefix && c.nom && c.nom.toLowerCase().includes(subPrefix))
         );
       });
-      if (matched) {
+      if (matched && matched.nom) {
         setSelectedSite(matched.nom);
       }
     }
@@ -156,8 +170,11 @@ export const App: React.FC = () => {
       // 1. Charger les consultations
       fetchConsultationsFromSupabase().then(({ data, error }) => {
         if (data && data.length > 0) {
-          setFiches(data);
-          showToast(`✓ ${data.length} consultations chargées depuis Supabase`);
+          const valid = data.filter((f: any) => Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom));
+          if (valid.length > 0) {
+            setFiches(valid);
+            showToast(`✓ ${valid.length} consultations chargées depuis Supabase`);
+          }
         } else if (error) {
           console.warn('Supabase fetch notice:', error);
         }
