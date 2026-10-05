@@ -568,8 +568,8 @@ export const App: React.FC = () => {
         {/* TAB 6: PLAN D'IMPLÉMENTATION 2026 */}
         {currentTab === 'plan' && <ImplementationPlanView />}
 
-        {/* TAB 7: SUPER ADMIN MULTI-CLINIQUES */}
-        {currentTab === 'superadmin' && (
+        {/* TAB 7: SUPER ADMIN MULTI-CLINIQUES (STRICTEMENT RÉSERVÉ AU SUPER ADMIN) */}
+        {currentTab === 'superadmin' && (currentUser?.role === 'super_admin' || currentUser?.email?.toLowerCase() === 'konedamaa@gmail.com') && (
           <SuperAdminView
             clinics={clinics}
             onAddClinic={handleAddClinic}

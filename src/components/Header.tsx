@@ -60,32 +60,37 @@ export const Header: React.FC<HeaderProps> = ({
       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
       position: 'sticky',
       top: 0,
-      zIndex: 100
+      zIndex: 100,
+      width: '100%',
+      boxSizing: 'border-box',
+      overflowX: 'clip'
     }} className="no-print">
       {/* Top micro-bar: Côte d'Ivoire Health Ministry branding */}
       <div style={{
         background: 'rgba(0, 0, 0, 0.3)',
-        padding: '6px 24px',
+        padding: '6px 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        fontSize: '0.8rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        fontSize: '0.78rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, overflow: 'hidden' }}>
           {/* Flag CI stripe */}
-          <div style={{ display: 'flex', height: '14px', width: '22px', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', height: '14px', width: '22px', borderRadius: '2px', overflow: 'hidden', flexShrink: 0 }}>
             <div style={{ background: '#f97316', width: '33.3%' }}></div>
             <div style={{ background: '#ffffff', width: '33.3%' }}></div>
             <div style={{ background: '#22c55e', width: '33.3%' }}></div>
           </div>
-          <span style={{ fontWeight: 600, letterSpacing: '0.04em' }}>
+          <span style={{ fontWeight: 600, letterSpacing: '0.03em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             RÉPUBLIQUE DE CÔTE D'IVOIRE • MINISTÈRE DE LA SANTÉ, DE L'HYGIÈNE PUBLIQUE ET DE LA CMU
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ color: '#99f6e4', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Activity size={14} /> Fiche Standardisée de Consultation & Triage (Oct. 2026)
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, fontSize: '0.75rem' }}>
+          <span style={{ color: '#99f6e4', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <Activity size={13} /> Fiche Standardisée (Oct. 2026)
           </span>
           <span style={{ color: '#cbd5e1' }}>
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -97,12 +102,13 @@ export const Header: React.FC<HeaderProps> = ({
       <div style={{
         maxWidth: '1440px',
         margin: '0 auto',
-        padding: '10px 24px',
+        padding: '10px 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'nowrap',
-        gap: '16px'
+        gap: '12px',
+        boxSizing: 'border-box'
       }}>
         {/* Left: Logo & Nouvelle Consultation */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
@@ -244,76 +250,123 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Authentication Profile & Actions À DROITE */}
           {currentUser ? (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px',
-              background: 'rgba(255, 255, 255, 0.10)',
-              padding: '4px 12px 4px 6px',
-              borderRadius: '30px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
-            }}>
-              <div style={{
-                width: '34px',
-                height: '34px',
-                borderRadius: '50%',
-                background: isSuperAdmin 
-                  ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' 
-                  : currentUser.role === 'administrateur'
-                  ? 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)'
-                  : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.9rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-                flexShrink: 0
-              }}>
-                {currentUser.nomComplet.charAt(0).toUpperCase()}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
-                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap' }}>
-                  {currentUser.nomComplet}
-                </span>
-                <span style={{
-                  fontSize: '0.67rem',
-                  color: isSuperAdmin ? '#fdba74' : currentUser.role === 'administrateur' ? '#5eead4' : '#93c5fd',
-                  fontWeight: 600,
-                  textTransform: 'capitalize'
+            (() => {
+              const cleanDisplayName = currentUser.nomComplet.replace(/\s*\(.*?\)/g, '').trim() || currentUser.nomComplet;
+              return (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255, 255, 255, 0.10)',
+                  padding: '4px 10px 4px 6px',
+                  borderRadius: '30px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+                  maxWidth: '300px',
+                  boxSizing: 'border-box'
                 }}>
-                  {isSuperAdmin ? '👑 Super Admin' : currentUser.role === 'administrateur' ? 'Directeur / Admin' : currentUser.role.replace('_', ' ')}
-                </span>
-              </div>
-
-              {onLogout && (
-                <button
-                  type="button"
-                  title="Se déconnecter"
-                  onClick={onLogout}
-                  style={{
-                    background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid rgba(239, 68, 68, 0.4)',
-                    color: '#fca5a5',
-                    padding: '6px',
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
                     borderRadius: '50%',
-                    cursor: 'pointer',
+                    background: isSuperAdmin 
+                      ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' 
+                      : currentUser.role === 'administrateur'
+                      ? 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginLeft: '2px',
-                    transition: 'all 0.15s ease'
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.45)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
-                >
-                  <LogOut size={14} />
-                </button>
-              )}
-            </div>
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    flexShrink: 0
+                  }}>
+                    {cleanDisplayName.charAt(0).toUpperCase()}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2, minWidth: 0 }}>
+                    <span 
+                      style={{ 
+                        fontSize: '0.82rem', 
+                        fontWeight: 700, 
+                        color: '#ffffff', 
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '120px'
+                      }} 
+                      title={currentUser.nomComplet}
+                    >
+                      {cleanDisplayName}
+                    </span>
+                    <span style={{
+                      fontSize: '0.65rem',
+                      color: isSuperAdmin ? '#fdba74' : currentUser.role === 'administrateur' ? '#5eead4' : '#93c5fd',
+                      fontWeight: 600,
+                      textTransform: 'capitalize'
+                    }}>
+                      {isSuperAdmin ? 'Super Admin' : currentUser.role === 'administrateur' ? 'Directeur' : currentUser.role.replace('_', ' ')}
+                    </span>
+                  </div>
+
+                  {/* Accès discret Super Admin uniquement dans la carte de profil du Super Admin */}
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      title={currentTab === 'superadmin' ? 'Retour aux Fiches Cliniques' : 'Accéder au Contrôle Super Admin'}
+                      onClick={() => onSelectTab(currentTab === 'superadmin' ? 'dashboard' : 'superadmin')}
+                      style={{
+                        background: currentTab === 'superadmin' ? 'rgba(234, 88, 12, 0.4)' : 'rgba(255, 255, 255, 0.12)',
+                        border: `1px solid ${currentTab === 'superadmin' ? '#f97316' : 'rgba(255, 255, 255, 0.25)'}`,
+                        color: currentTab === 'superadmin' ? '#ffedd5' : '#cbd5e1',
+                        padding: '4px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginLeft: '2px',
+                        transition: 'all 0.15s ease',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <span>👑</span>
+                      <span>{currentTab === 'superadmin' ? 'Clinique' : 'Admin'}</span>
+                    </button>
+                  )}
+
+                  {onLogout && (
+                    <button
+                      type="button"
+                      title="Se déconnecter"
+                      onClick={onLogout}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        color: '#fca5a5',
+                        padding: '5px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginLeft: '2px',
+                        flexShrink: 0,
+                        transition: 'all 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.45)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
+                    >
+                      <LogOut size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             onShowLoginModal && (
               <button
@@ -526,33 +579,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Users size={17} />
             <span>Équipe Médicale (Directeur)</span>
-          </button>
-        )}
-
-        {/* TAB SUPER ADMIN (STRICTEMENT RÉSERVÉ AU SUPER ADMIN : Salifou et les autres ne le voient PAS) */}
-        {isSuperAdmin && (
-          <button
-            id="nav-tab-superadmin"
-            onClick={() => onSelectTab('superadmin')}
-            style={{
-              padding: '10px 16px',
-              background: currentTab === 'superadmin' ? 'rgba(234, 88, 12, 0.25)' : 'transparent',
-              border: 'none',
-              borderBottom: currentTab === 'superadmin' ? '3px solid #f97316' : '3px solid transparent',
-              color: currentTab === 'superadmin' ? '#fdba74' : '#cbd5e1',
-              fontWeight: currentTab === 'superadmin' ? 800 : 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              borderRadius: '6px 6px 0 0',
-              transition: 'all 0.15s ease',
-              marginLeft: 'auto'
-            }}
-          >
-            <Building2 size={17} color={currentTab === 'superadmin' ? '#fb923c' : '#5eead4'} />
-            <span>👑 Super Admin (Contrôle Cliniques)</span>
           </button>
         )}
       </div>
