@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { KPIOverview } from './components/KPIOverview';
 import { ConsultationForm } from './components/ConsultationForm';
@@ -492,8 +492,14 @@ export const App: React.FC = () => {
     setCurrentTab('registry');
   };
 
-  // Live KPI statistics
-  const stats = calculateKPIsFromFiches(fiches);
+  // Fiches et statistiques isolées par établissement sanitaire actif
+  const clinicFiches = useMemo(() => {
+    if (!selectedSite) return fiches;
+    return fiches.filter((f) => f.siteNom === selectedSite || (!f.siteNom && clinics.length <= 1));
+  }, [fiches, selectedSite, clinics.length]);
+
+  // Live KPI statistics pour l'établissement sélectionné
+  const stats = calculateKPIsFromFiches(clinicFiches);
 
   // Écran de chargement initial
   if (isAuthLoading) {
@@ -602,7 +608,7 @@ export const App: React.FC = () => {
           <ConsultationForm
             key={editingFiche?.id || 'new'}
             initialFiche={editingFiche}
-            existingFiches={fiches}
+            existingFiches={clinicFiches}
             onSave={handleSaveFiche}
             onCancel={() => {
               setEditingFiche(null);
@@ -617,7 +623,7 @@ export const App: React.FC = () => {
         {/* TAB 3: REGISTRE DES CONSULTATIONS */}
         {currentTab === 'registry' && (
           <PatientRegistry
-            fiches={fiches}
+            fiches={clinicFiches}
             onSelectFiche={handleEditFiche}
             onEditFiche={handleEditFiche}
             onDeleteFiche={handleDeleteFiche}
@@ -633,7 +639,7 @@ export const App: React.FC = () => {
         {/* TAB 4: GESTION DES RENDEZ-VOUS & RELANCES */}
         {currentTab === 'appointments' && (
           <AppointmentsView
-            fiches={fiches}
+            fiches={clinicFiches}
             onStartNewVisit={handleNewVisitForPatient}
             onUpdateFicheSuivi={handleUpdateFicheSuivi}
           />
