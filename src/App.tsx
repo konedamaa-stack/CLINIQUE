@@ -53,8 +53,11 @@ export const App: React.FC = () => {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const valid = parsed.filter((f: any) => Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom));
-          if (valid.length > 0) return valid;
+          // Filtrer et retirer toute ancienne fiche de démonstration (f-ci-00...)
+          const valid = parsed.filter((f: any) => 
+            Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom && !String(f.id).startsWith('f-ci-00'))
+          );
+          return valid;
         }
       } catch (e) {
         console.error('Failed to parse saved fiches:', e);
@@ -188,11 +191,19 @@ export const App: React.FC = () => {
       // 1. Charger les consultations
       fetchConsultationsFromSupabase().then(({ data, error }) => {
         if (data && data.length > 0) {
-          const valid = data.filter((f: any) => Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom));
+          const valid = data.filter((f: any) => 
+            Boolean(f && f.admin && typeof f.admin === 'object' && f.admin.nom && !String(f.id).startsWith('f-ci-00'))
+          );
+          setFiches(valid);
           if (valid.length > 0) {
-            setFiches(valid);
-            showToast(`✓ ${valid.length} consultations chargées depuis Supabase`);
+            showToast(`✓ ${valid.length} consultations chargées`);
           }
+          // Nettoyer les fiches démo dans Supabase
+          data.forEach((f: any) => {
+            if (f.id && String(f.id).startsWith('f-ci-00')) {
+              deleteConsultationFromSupabase(f.id).catch(() => {});
+            }
+          });
         } else if (error) {
           console.warn('Supabase fetch notice:', error);
         }
@@ -306,6 +317,17 @@ export const App: React.FC = () => {
       });
     }
     showToast('Fiche supprimée du registre.');
+  };
+
+  const handleClearAllFiches = () => {
+    if (isSupabaseConfigured) {
+      fiches.forEach((f) => {
+        deleteConsultationFromSupabase(f.id).catch(() => {});
+      });
+    }
+    setFiches([]);
+    localStorage.removeItem('clinique_consultations_ci');
+    showToast('✓ Registre des consultations vidé avec succès.');
   };
 
   const handleNewConsultation = () => {
@@ -548,6 +570,7 @@ export const App: React.FC = () => {
             onPrintFiche={handlePrintPreview}
             onNewConsultation={handleNewConsultation}
             onNewVisitForPatient={handleNewVisitForPatient}
+            onClearAll={handleClearAllFiches}
             initialFilterTB={registryFilterTB}
             initialFilterPop={registryFilterPop}
           />

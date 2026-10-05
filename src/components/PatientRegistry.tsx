@@ -22,6 +22,7 @@ interface PatientRegistryProps {
   onPrintFiche: (fiche: FicheConsultation) => void;
   onNewConsultation: () => void;
   onNewVisitForPatient: (fiche: FicheConsultation) => void;
+  onClearAll?: () => void;
   initialFilterTB?: boolean;
   initialFilterPop?: TypePopulation | null;
 }
@@ -33,6 +34,7 @@ export const PatientRegistry: React.FC<PatientRegistryProps> = ({
   onPrintFiche,
   onNewConsultation,
   onNewVisitForPatient,
+  onClearAll,
   initialFilterTB = false,
   initialFilterPop = null
 }) => {
@@ -167,11 +169,28 @@ export const PatientRegistry: React.FC<PatientRegistryProps> = ({
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {onClearAll && fiches.length > 0 && (
+              <button 
+                onClick={() => {
+                  if (window.confirm("Êtes-vous sûr de vouloir vider toutes les consultations pour repartir à zéro ?")) {
+                    onClearAll();
+                  }
+                }}
+                className="btn btn-secondary"
+                style={{ color: '#dc2626', borderColor: '#fca5a5', background: '#fef2f2' }}
+                title="Supprimer toutes les consultations pour repartir à zéro"
+              >
+                <Trash2 size={16} />
+                Vider le Registre
+              </button>
+            )}
+
             <button 
               onClick={exportToCSV}
               className="btn btn-secondary"
               title="Exporter vers format CSV pour intégration DHIS2"
+              disabled={fiches.length === 0}
             >
               <Download size={16} />
               Exporter CSV (DHIS2)
@@ -290,8 +309,36 @@ export const PatientRegistry: React.FC<PatientRegistryProps> = ({
             <tbody>
               {filteredFiches.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>
-                    Aucun dossier patient ne correspond aux critères de recherche.
+                  <td colSpan={8} style={{ padding: '60px 20px', textAlign: 'center' }}>
+                    <div style={{ maxWidth: '440px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                      <div style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        background: '#f0fdfa',
+                        border: '1px solid #ccfbf1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#0d9488'
+                      }}>
+                        <PlusCircle size={32} />
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+                        Aucune consultation enregistrée
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.5 }}>
+                        Le registre est vierge. Vous pouvez dès maintenant créer votre première consultation pour tester le circuit et faire vos suggestions.
+                      </div>
+                      <button
+                        onClick={onNewConsultation}
+                        className="btn btn-primary"
+                        style={{ marginTop: '6px' }}
+                      >
+                        <Plus size={16} />
+                        Créer une Première Consultation
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ) : (
