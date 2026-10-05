@@ -211,12 +211,9 @@ export const Header: React.FC<HeaderProps> = ({
                   </option>
                 ))
               ) : (
-                <>
-                  <option value="Centre de Santé Urbain de Treichville (Abidjan)" style={{ color: '#0f172a' }}>CSU Treichville (Abidjan)</option>
-                  <option value="Formation Sanitaire Urbaine de Yopougon Attié" style={{ color: '#0f172a' }}>FSU Yopougon Attié (Abidjan)</option>
-                  <option value="Centre de Santé Rural de Bouaké-Koko" style={{ color: '#0f172a' }}>CSR Bouaké-Koko</option>
-                  <option value="Hôpital Général de San Pédro" style={{ color: '#0f172a' }}>HG San Pédro</option>
-                </>
+                <option value="" style={{ color: '#0f172a' }}>
+                  Aucun établissement (Créer via 👑 Admin)
+                </option>
               )}
             </select>
           </div>

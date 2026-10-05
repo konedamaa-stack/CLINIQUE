@@ -37,6 +37,8 @@ interface SuperAdminViewProps {
   clinics: ClinicStructure[];
   onAddClinic: (newClinic: ClinicStructure) => void;
   onUpdateClinic: (updatedClinic: ClinicStructure) => void;
+  onDeleteClinic?: (clinicId: string) => void;
+  onClearAllClinics?: () => void;
   onSelectClinicForControl: (clinicNom: string) => void;
   fiches: FicheConsultation[];
 }
@@ -45,6 +47,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   clinics,
   onAddClinic,
   onUpdateClinic,
+  onDeleteClinic,
+  onClearAllClinics,
   onSelectClinicForControl,
   fiches
 }) => {
@@ -454,6 +458,32 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
             Exporter Bilan National DHIS2
           </button>
 
+          {onClearAllClinics && clinics.length > 0 && (
+            <button
+              onClick={() => {
+                if (window.confirm("Êtes-vous sûr de vouloir supprimer tous les établissements pour repartir à zéro ?")) {
+                  onClearAllClinics();
+                }
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                color: '#fca5a5',
+                padding: '11px 18px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                cursor: 'pointer'
+              }}
+            >
+              <Trash2 size={18} />
+              Vider le Réseau
+            </button>
+          )}
+
           <button
             onClick={() => setIsAddModalOpen(true)}
             style={{
@@ -687,7 +717,42 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredClinics.map((c) => {
+              {filteredClinics.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ padding: '60px 20px', textAlign: 'center' }}>
+                    <div style={{ maxWidth: '440px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                      <div style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '50%',
+                        background: '#f0fdfa',
+                        border: '1px solid #ccfbf1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#0d9488'
+                      }}>
+                        <Building2 size={32} />
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+                        Aucun établissement enregistré
+                      </div>
+                      <div style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.5 }}>
+                        Le répertoire des cliniques est vierge. Vous pouvez dès maintenant ajouter vos propres centres de santé et leur assigner un directeur.
+                      </div>
+                      <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="btn btn-primary"
+                        style={{ marginTop: '6px' }}
+                      >
+                        <PlusCircle size={16} />
+                        Ajouter un Premier Établissement
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredClinics.map((c) => {
                 const isActif = c.statut === 'actif';
                 const isMaintenance = c.statut === 'maintenance';
                 return (
@@ -901,11 +966,36 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                           <ExternalLink size={14} />
                           Contrôler
                         </button>
+
+                        {onDeleteClinic && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Confirmez-vous la suppression définitive de l'établissement "${c.nom}" du réseau ?`)) {
+                                onDeleteClinic(c.id);
+                              }
+                            }}
+                            title="Supprimer cette clinique du réseau"
+                            style={{
+                              background: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#dc2626',
+                              padding: '6px 8px',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

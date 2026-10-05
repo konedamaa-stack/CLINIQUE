@@ -39,7 +39,14 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('clinique_structures_ci');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Filtrer et retirer les 4 cliniques démo (clinic-csu-treichville, clinic-fsu-yopougon, clinic-csr-bouake, clinic-hg-sanpedro)
+          const valid = parsed.filter((c: any) => 
+            Boolean(c && c.nom && !['clinic-csu-treichville', 'clinic-fsu-yopougon', 'clinic-csr-bouake', 'clinic-hg-sanpedro'].includes(c.id))
+          );
+          return valid;
+        }
       } catch (e) {
         console.error('Failed to parse saved clinics:', e);
       }
@@ -75,7 +82,21 @@ export const App: React.FC = () => {
     }
     return 'dashboard';
   });
-  const [selectedSite, setSelectedSite] = useState<string>('Centre de Santé Urbain de Treichville (Abidjan)');
+  const [selectedSite, setSelectedSite] = useState<string>(() => {
+    const saved = localStorage.getItem('clinique_structures_ci');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((c: any) => 
+            Boolean(c && c.nom && !['clinic-csu-treichville', 'clinic-fsu-yopougon', 'clinic-csr-bouake', 'clinic-hg-sanpedro'].includes(c.id))
+          );
+          if (valid.length > 0) return valid[0].nom;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
   const [editingFiche, setEditingFiche] = useState<FicheConsultation | null>(null);
   const [previewFiche, setPreviewFiche] = useState<FicheConsultation | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
@@ -88,6 +109,13 @@ export const App: React.FC = () => {
     localStorage.setItem('clinique_structures_ci', JSON.stringify(clinics));
     if (isSupabaseConfigured) {
       syncClinicsToSupabase(clinics).catch(console.warn);
+    }
+    if (clinics.length > 0) {
+      if (!selectedSite || !clinics.some(c => c.nom === selectedSite)) {
+        setSelectedSite(clinics[0].nom);
+      }
+    } else if (selectedSite !== '') {
+      setSelectedSite('');
     }
   }, [clinics]);
 
@@ -209,15 +237,19 @@ export const App: React.FC = () => {
         }
       });
 
-      // 2. Charger les établissements du Cloud
+      // 2. Charger les établissements du Cloud (en excluant les cliniques de démonstration)
       fetchClinicsFromSupabase().then((cloudClinics) => {
         if (cloudClinics && cloudClinics.length > 0) {
+          const validCloud = cloudClinics.filter((c: any) => 
+            Boolean(c && c.nom && !['clinic-csu-treichville', 'clinic-fsu-yopougon', 'clinic-csr-bouake', 'clinic-hg-sanpedro'].includes(c.id))
+          );
           setClinics((prev) => {
             const map = new Map<string, ClinicStructure>();
-            prev.forEach(c => map.set(c.id, c));
-            cloudClinics.forEach(c => map.set(c.id, c));
+            prev.filter(c => !['clinic-csu-treichville', 'clinic-fsu-yopougon', 'clinic-csr-bouake', 'clinic-hg-sanpedro'].includes(c.id)).forEach(c => map.set(c.id, c));
+            validCloud.forEach(c => map.set(c.id, c));
             const merged = Array.from(map.values());
             localStorage.setItem('clinique_structures_ci', JSON.stringify(merged));
+            syncClinicsToSupabase(merged).catch(() => {});
             return merged;
           });
         }
@@ -270,6 +302,28 @@ export const App: React.FC = () => {
   const handleUpdateClinic = (updatedClinic: ClinicStructure) => {
     setClinics((prev) => prev.map((c) => (c.id === updatedClinic.id ? updatedClinic : c)));
     showToast(`✓ Paramètres de "${updatedClinic.nom}" mis à jour.`);
+  };
+
+  const handleDeleteClinic = (clinicId: string) => {
+    setClinics((prev) => {
+      const updated = prev.filter(c => c.id !== clinicId);
+      localStorage.setItem('clinique_structures_ci', JSON.stringify(updated));
+      if (isSupabaseConfigured) {
+        syncClinicsToSupabase(updated).catch(console.warn);
+      }
+      return updated;
+    });
+    showToast('Établissement supprimé du réseau.');
+  };
+
+  const handleClearAllClinics = () => {
+    setClinics([]);
+    localStorage.removeItem('clinique_structures_ci');
+    if (isSupabaseConfigured) {
+      syncClinicsToSupabase([]).catch(console.warn);
+    }
+    setSelectedSite('');
+    showToast('✓ Réseau sanitaire vidé avec succès.');
   };
 
   const handleSelectClinicForControl = (clinicNom: string) => {
@@ -597,6 +651,8 @@ export const App: React.FC = () => {
             clinics={clinics}
             onAddClinic={handleAddClinic}
             onUpdateClinic={handleUpdateClinic}
+            onDeleteClinic={handleDeleteClinic}
+            onClearAllClinics={handleClearAllClinics}
             onSelectClinicForControl={handleSelectClinicForControl}
             fiches={fiches}
           />
