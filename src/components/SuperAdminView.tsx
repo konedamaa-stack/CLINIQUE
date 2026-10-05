@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Building2, 
   Search, 
@@ -32,6 +32,42 @@ import {
   saveSuperAdminStaffAccount, 
   deleteSuperAdminStaffAccount 
 } from '../lib/supabase';
+
+export const STANDARD_REGIONS = [
+  'Abidjan 1 (Yopougon, Abobo, Anyama)',
+  'Abidjan 2 (Cocody, Bingerville, Plateau, Treichville, Port-Bouët, Koumassi)',
+  'Agnéby-Tiassa (Agboville)',
+  'Bafing (Touba)',
+  'Bagoué (Boundiali)',
+  'Bélier (Yamoussoukro, Toumodi)',
+  'Béré (Mankono)',
+  'Bounkani (Bouna)',
+  'Cavally (Guiglo)',
+  'Folon (Minignan)',
+  'Gbêkê (Bouaké, Sakassou, Béoumi)',
+  'Gbôklé (Sassandra)',
+  'Gôh (Gagnoa)',
+  'Gontougo (Bondoukou)',
+  'Grands-Ponts (Dabou)',
+  'Guémon (Duékoué)',
+  'Hambol (Katiola)',
+  'Haut-Sassandra (Daloa)',
+  'Iffou (Daoukro)',
+  'Indénié-Djuablin (Abengourou)',
+  'Kabadougou (Odienné)',
+  'Lôh-Djiboua (Divo)',
+  'Marahoué (Bouaflé)',
+  'Mé (Adzopé)',
+  'Moronou (Bongouanou)',
+  'Nawa (Soubré)',
+  'N\'Zi (Dimbokro)',
+  'Poro (Korhogo)',
+  'San-Pédro (San-Pédro)',
+  'Sud-Comoé (Aboisso)',
+  'Tchologo (Ferkessédougou)',
+  'Tonkpi (Man)',
+  'Worodougou (Séguéla)'
+];
 
 interface SuperAdminViewProps {
   clinics: ClinicStructure[];
@@ -95,6 +131,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [newNom, setNewNom] = useState('');
   const [newType, setNewType] = useState<ClinicType>('CSU');
   const [newRegion, setNewRegion] = useState('Abidjan 1');
+  const [isCustomRegion, setIsCustomRegion] = useState(false);
   const [newDistrict, setNewDistrict] = useState('');
   const [newDirecteur, setNewDirecteur] = useState('');
   const [newTelephone, setNewTelephone] = useState('');
@@ -103,6 +140,17 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
   const [newSubdomain, setNewSubdomain] = useState('');
   const [newCustomDomain, setNewCustomDomain] = useState('');
   const [newDirecteurPassword, setNewDirecteurPassword] = useState('Password123!');
+
+  // Liste des régions sanitaires uniques existantes pour les filtres
+  const availableRegions = useMemo(() => {
+    const set = new Set<string>();
+    clinics.forEach((c) => {
+      if (c.regionSanitaire && c.regionSanitaire.trim()) {
+        set.add(c.regionSanitaire.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [clinics]);
 
   // Filtering
   const filteredClinics = clinics.filter((c) => {
@@ -149,7 +197,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
       nom: newNom,
       codeDistrict: 'DIST-' + Math.floor(100 + Math.random() * 900),
       districtSanitaire: newDistrict || 'District Sanitaire Central',
-      regionSanitaire: newRegion,
+      regionSanitaire: (newRegion && newRegion.trim()) ? newRegion.trim() : 'Abidjan 1',
       typeStructure: newType,
       statut: 'actif',
       directeurNom: newDirecteur || 'Directeur / Médecin Chef',
@@ -194,6 +242,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
     setIsAddModalOpen(false);
     // Reset
     setNewNom('');
+    setNewRegion('Abidjan 1');
+    setIsCustomRegion(false);
     setNewDistrict('');
     setNewDirecteur('');
     setNewTelephone('');
@@ -636,11 +686,12 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 color: '#334155'
               }}
             >
-              <option value="all">Toutes les Régions</option>
-              <option value="Abidjan 1">Région Abidjan 1</option>
-              <option value="Abidjan 2">Région Abidjan 2</option>
-              <option value="Gbêkê">Région Gbêkê (Bouaké)</option>
-              <option value="San-Pédro">Région San-Pédro</option>
+              <option value="all">Toutes les Régions ({clinics.length})</option>
+              {availableRegions.map((reg) => (
+                <option key={reg} value={reg}>
+                  Région : {reg}
+                </option>
+              ))}
             </select>
 
             <select
@@ -1089,21 +1140,94 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                    Région Sanitaire *
-                  </label>
-                  <select
-                    value={newRegion}
-                    onChange={(e) => setNewRegion(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: '#ffffff' }}
-                  >
-                    <option value="Abidjan 1">Abidjan 1 (Yopougon, Abobo, Anyama)</option>
-                    <option value="Abidjan 2">Abidjan 2 (Treichville, Cocody, Koumassi)</option>
-                    <option value="Gbêkê">Gbêkê (Bouaké, Sakassou, Béoumi)</option>
-                    <option value="San-Pédro">San-Pédro (Bas-Sassandra)</option>
-                    <option value="Poro">Poro (Korhogo)</option>
-                    <option value="Haut-Sassandra">Haut-Sassandra (Daloa)</option>
-                  </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155' }}>
+                      Région Sanitaire *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomRegion(!isCustomRegion);
+                        if (!isCustomRegion && !newRegion) {
+                          setNewRegion('');
+                        }
+                      }}
+                      style={{
+                        background: isCustomRegion ? '#eff6ff' : '#f1f5f9',
+                        border: isCustomRegion ? '1px solid #3b82f6' : '1px solid #cbd5e1',
+                        color: isCustomRegion ? '#1d4ed8' : '#475569',
+                        borderRadius: '6px',
+                        padding: '3px 8px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      {isCustomRegion ? '📋 Choisir dans la liste' : '✏️ Saisie libre'}
+                    </button>
+                  </div>
+
+                  {isCustomRegion ? (
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Ex: N'Zi, Bélier, Sud-Comoé, Marahoué, Autre..."
+                        value={newRegion}
+                        onChange={(e) => setNewRegion(e.target.value)}
+                        required
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '2px solid #0d9488',
+                          fontSize: '0.9rem',
+                          background: '#ffffff',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                      <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                        💡 Région personnalisée : tapez librement le nom de votre région ou territoire.
+                      </span>
+                    </div>
+                  ) : (
+                    <select
+                      value={newRegion}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setIsCustomRegion(true);
+                          setNewRegion('');
+                        } else {
+                          setNewRegion(e.target.value);
+                        }
+                      }}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', background: '#ffffff' }}
+                    >
+                      <optgroup label="── Régions Sanitaires Officielles ──">
+                        {STANDARD_REGIONS.map((reg) => {
+                          const val = reg.includes(' (') ? reg.split(' (')[0] : reg;
+                          return (
+                            <option key={reg} value={val}>
+                              {reg}
+                            </option>
+                          );
+                        })}
+                      </optgroup>
+                      {availableRegions.filter(r => !STANDARD_REGIONS.some(sr => sr.startsWith(r))).length > 0 && (
+                        <optgroup label="── Vos Régions Personnalisées Déjà Utilisées ──">
+                          {availableRegions.filter(r => !STANDARD_REGIONS.some(sr => sr.startsWith(r))).map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <option value="__custom__">➕ Autre Région (Saisie libre personnalisée...)</option>
+                    </select>
+                  )}
                 </div>
               </div>
 
