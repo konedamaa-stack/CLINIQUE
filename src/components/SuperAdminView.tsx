@@ -1015,15 +1015,20 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px'
+          padding: '16px',
+          overflowY: 'auto'
         }}>
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
-            maxWidth: '600px',
+            maxWidth: '640px',
             width: '100%',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+            margin: 'auto'
           }}>
             <div style={{
               background: 'linear-gradient(135deg, #0f172a 0%, #0f766e 100%)',
@@ -1031,7 +1036,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               padding: '18px 24px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Building2 size={22} color="#5eead4" />
@@ -1047,7 +1053,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleCreateClinicSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleCreateClinicSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                   Nom Officiel de la Structure *
@@ -1237,28 +1244,39 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                   />
                 </div>
               </div>
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+            {/* Pied de page fixe et toujours visible */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                padding: '16px 24px',
+                background: '#f8fafc',
+                borderTop: '1px solid #e2e8f0',
+                flexShrink: 0
+              }}>
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  style={{ padding: '10px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                  style={{ padding: '10px 18px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', color: '#475569' }}
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   style={{
-                    padding: '10px 20px',
+                    padding: '10px 24px',
                     background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '8px',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(13, 148, 136, 0.35)'
                   }}
                 >
-                  Valider & Enregistrer dans le Réseau
+                  ✓ Valider & Enregistrer dans le Réseau
                 </button>
               </div>
             </form>
@@ -1280,15 +1298,20 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px'
+          padding: '16px',
+          overflowY: 'auto'
         }}>
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
-            maxWidth: '560px',
+            maxWidth: '580px',
             width: '100%',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+            margin: 'auto'
           }}>
             <div style={{
               background: '#0f172a',
@@ -1296,7 +1319,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               padding: '18px 24px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>
@@ -1314,7 +1338,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </button>
             </div>
 
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', flex: 1 }}>
               <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', color: '#64748b' }}>
                 En tant que Super Administrateur, activez ou suspendez les fonctionnalités disponibles pour le personnel soignant de cet établissement :
               </p>
@@ -1365,23 +1389,31 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 );
               })}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button
-                  type="button"
-                  onClick={() => setConfigClinic(null)}
-                  style={{
-                    padding: '10px 20px',
-                    background: '#0f172a',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Fermer & Enregistrer les Modifications
-                </button>
-              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              padding: '16px 24px',
+              background: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              flexShrink: 0
+            }}>
+              <button
+                type="button"
+                onClick={() => setConfigClinic(null)}
+                style={{
+                  padding: '10px 20px',
+                  background: '#0f172a',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Fermer & Enregistrer les Modifications
+              </button>
             </div>
           </div>
         </div>
@@ -1401,15 +1433,20 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px'
+          padding: '16px',
+          overflowY: 'auto'
         }}>
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
-            maxWidth: '620px',
+            maxWidth: '640px',
             width: '100%',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)'
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+            margin: 'auto'
           }}>
             <div style={{
               background: 'linear-gradient(135deg, #0369a1 0%, #0f172a 100%)',
@@ -1417,7 +1454,8 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               padding: '18px 24px',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              flexShrink: 0
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Globe size={22} color="#38bdf8" />
@@ -1438,7 +1476,7 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
               </button>
             </div>
 
-            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto', flex: 1 }}>
               <div style={{
                 background: '#f0f9ff',
                 border: '1px solid #bae6fd',
@@ -1560,57 +1598,67 @@ export const SuperAdminView: React.FC<SuperAdminViewProps> = ({
                 </table>
               </div>
 
-              {/* Action buttons */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+            </div>
+
+            {/* Pied de page fixe et toujours visible */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              background: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              flexShrink: 0
+            }}>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelectClinicForControl(domainModalClinic.nom);
+                  setDomainModalClinic(null);
+                }}
+                style={{
+                  padding: '9px 14px',
+                  background: '#f0fdfa',
+                  border: '1px solid #99f6e4',
+                  color: '#0f766e',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <ExternalLink size={14} />
+                Tester l'Accès via ce Domaine
+              </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
                 <button
                   type="button"
-                  onClick={() => {
-                    onSelectClinicForControl(domainModalClinic.nom);
-                    setDomainModalClinic(null);
-                  }}
+                  onClick={() => setDomainModalClinic(null)}
+                  style={{ padding: '9px 16px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', color: '#475569' }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDomainChanges}
                   style={{
-                    padding: '9px 14px',
-                    background: '#f0fdfa',
-                    border: '1px solid #99f6e4',
-                    color: '#0f766e',
+                    padding: '9px 18px',
+                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    color: '#ffffff',
+                    border: 'none',
                     borderRadius: '8px',
                     fontWeight: 700,
-                    fontSize: '0.82rem',
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
+                    fontSize: '0.85rem',
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
                   }}
                 >
-                  <ExternalLink size={14} />
-                  Tester l'Accès via ce Domaine
+                  Enregistrer le Domaine
                 </button>
-
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setDomainModalClinic(null)}
-                    style={{ padding: '9px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSaveDomainChanges}
-                    style={{
-                      padding: '9px 18px',
-                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: '0.85rem'
-                    }}
-                  >
-                    Enregistrer le Domaine
-                  </button>
-                </div>
               </div>
             </div>
           </div>
