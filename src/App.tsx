@@ -97,6 +97,24 @@ export const App: React.FC = () => {
     }
   }, [currentTab]);
 
+  // Protection stricte de l'accès Super Admin (les autres utilisateurs ne peuvent jamais y accéder)
+  useEffect(() => {
+    if (currentTab === 'superadmin') {
+      const isSuperAdmin = Boolean(
+        currentUser && (
+          currentUser.role === 'super_admin' || 
+          currentUser.email?.toLowerCase() === 'konedamaa@gmail.com'
+        )
+      );
+      if (!isSuperAdmin) {
+        setCurrentTab('dashboard');
+        if (window.location.hash === '#superadmin') {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      }
+    }
+  }, [currentTab, currentUser]);
+
   // Multi-tenant automatic domain / subdomain resolution
   useEffect(() => {
     if (typeof window === 'undefined') return;

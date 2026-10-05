@@ -41,6 +41,17 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const currentClinic = availableClinics.find(c => c.nom === selectedSite);
   const currentClinicDomain = currentClinic?.domain;
+
+  const isSuperAdmin = Boolean(
+    currentUser && (
+      currentUser.role === 'super_admin' || 
+      currentUser.email?.toLowerCase() === 'konedamaa@gmail.com' ||
+      currentUser.nomComplet?.toLowerCase().includes('super administrateur')
+    )
+  );
+  const isDirectorOrAdmin = Boolean(
+    isSuperAdmin || (currentUser && currentUser.role === 'administrateur')
+  );
   return (
     <header style={{
       background: 'linear-gradient(135deg, #0f172a 0%, #0f766e 100%)',
@@ -86,49 +97,87 @@ export const Header: React.FC<HeaderProps> = ({
       <div style={{
         maxWidth: '1440px',
         margin: '0 auto',
-        padding: '12px 24px',
+        padding: '10px 24px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        flexWrap: 'wrap',
+        flexWrap: 'nowrap',
         gap: '16px'
       }}>
-        {/* App Title & Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer' }} onClick={() => onSelectTab('dashboard')}>
-          <div style={{
-            background: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
-            padding: '10px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(20, 184, 166, 0.4)'
-          }}>
-            <Activity size={26} color="#ffffff" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI
-              </h1>
-              <span className="badge" style={{ background: 'rgba(234, 88, 12, 0.25)', color: '#fdba74', border: '1px solid rgba(234, 88, 12, 0.5)' }}>
-                Circuit Intégré
-              </span>
+        {/* Left: Logo & Nouvelle Consultation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }} onClick={() => onSelectTab('dashboard')}>
+            <div style={{
+              background: 'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
+              padding: '9px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 12px rgba(20, 184, 166, 0.4)'
+            }}>
+              <Activity size={24} color="#ffffff" />
             </div>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1' }}>
-              Accueil • Triage • Dépistage TB • Orientation • Populations Clés
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
+                  CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI
+                </h1>
+                <span className="badge" style={{ background: 'rgba(234, 88, 12, 0.25)', color: '#fdba74', border: '1px solid rgba(234, 88, 12, 0.5)', fontSize: '0.68rem', padding: '2px 8px', borderRadius: '10px' }}>
+                  Circuit Intégré
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.74rem', color: '#cbd5e1' }}>
+                Accueil • Triage • Dépistage TB • Orientation • Populations Clés
+              </p>
+            </div>
           </div>
+
+          <button 
+            id="btn-header-new-consultation"
+            onClick={() => onSelectTab('consultation')}
+            className="btn btn-primary"
+            style={{
+              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.84rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              color: '#ffffff',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <PlusCircle size={17} />
+            <span>Nouvelle Consultation</span>
+          </button>
         </div>
 
-        {/* Site selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.08)', padding: '6px 12px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-          <Building2 size={16} color="#5eead4" />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site Sanitaire</span>
+        {/* Center: Site Sanitaire selector */}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          background: 'rgba(255, 255, 255, 0.08)', 
+          padding: '6px 14px', 
+          borderRadius: '12px', 
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          maxWidth: '380px',
+          minWidth: '220px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        }}>
+          <Building2 size={17} color="#5eead4" style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <span style={{ fontSize: '0.67rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Site Sanitaire</span>
               {currentClinicDomain && (
-                <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: 600, background: 'rgba(56, 189, 248, 0.15)', padding: '1px 6px', borderRadius: '4px' }}>
+                <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: 600, background: 'rgba(56, 189, 248, 0.15)', padding: '1px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
                   🌐 {currentClinicDomain}
                 </span>
               )}
@@ -142,9 +191,11 @@ export const Header: React.FC<HeaderProps> = ({
                 border: 'none',
                 color: '#ffffff',
                 fontWeight: 600,
-                fontSize: '0.85rem',
+                fontSize: '0.84rem',
                 outline: 'none',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                textOverflow: 'ellipsis',
+                width: '100%'
               }}
             >
               {availableClinics && availableClinics.length > 0 ? (
@@ -165,57 +216,79 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Supabase Cloud Connection Status */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: isSupabaseConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-          border: `1px solid ${isSupabaseConnected ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
-          padding: '6px 12px',
-          borderRadius: '8px',
-          fontSize: '0.8rem',
-          color: isSupabaseConnected ? '#34d399' : '#fcd34d'
-        }}>
-          <Database size={15} />
-          <span>{isSupabaseConnected ? 'Supabase Cloud Actif' : 'Stockage Local (Offline-Ready)'}</span>
-        </div>
+        {/* Right Section: Cloud Sync + User Profile Card ALIGNÉ À DROITE */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: 'auto', flexShrink: 0 }}>
+          {/* Supabase Cloud Connection Status */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: isSupabaseConnected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+            border: `1px solid ${isSupabaseConnected ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+            padding: '5px 10px',
+            borderRadius: '20px',
+            fontSize: '0.74rem',
+            color: isSupabaseConnected ? '#34d399' : '#fcd34d',
+            whiteSpace: 'nowrap'
+          }}>
+            <span style={{
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              background: isSupabaseConnected ? '#10b981' : '#f59e0b',
+              boxShadow: isSupabaseConnected ? '0 0 8px #10b981' : 'none'
+            }} />
+            <Database size={13} />
+            <span>{isSupabaseConnected ? 'Cloud Supabase' : 'Stockage Local'}</span>
+          </div>
 
-        {/* User Authentication Profile & Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* User Authentication Profile & Actions À DROITE */}
           {currentUser ? (
             <div style={{
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              background: 'rgba(255, 255, 255, 0.08)',
-              padding: '4px 10px 4px 6px',
-              borderRadius: '24px',
-              border: '1px solid rgba(255, 255, 255, 0.15)'
+              background: 'rgba(255, 255, 255, 0.10)',
+              padding: '4px 12px 4px 6px',
+              borderRadius: '30px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)'
             }}>
               <div style={{
-                width: '32px',
-                height: '32px',
+                width: '34px',
+                height: '34px',
                 borderRadius: '50%',
-                background: 'linear-gradient(135deg, #14b8a6 0%, #0369a1 100%)',
+                background: isSuperAdmin 
+                  ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' 
+                  : currentUser.role === 'administrateur'
+                  ? 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)'
+                  : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: '#ffffff',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                flexShrink: 0
               }}>
                 {currentUser.nomComplet.charAt(0).toUpperCase()}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f1f5f9', whiteSpace: 'nowrap' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#ffffff', whiteSpace: 'nowrap' }}>
                   {currentUser.nomComplet}
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#5eead4', textTransform: 'capitalize' }}>
-                  {currentUser.role.replace('_', ' ')}
+                <span style={{
+                  fontSize: '0.67rem',
+                  color: isSuperAdmin ? '#fdba74' : currentUser.role === 'administrateur' ? '#5eead4' : '#93c5fd',
+                  fontWeight: 600,
+                  textTransform: 'capitalize'
+                }}>
+                  {isSuperAdmin ? '👑 Super Admin' : currentUser.role === 'administrateur' ? 'Directeur / Admin' : currentUser.role.replace('_', ' ')}
                 </span>
               </div>
+
               {onLogout && (
                 <button
                   type="button"
@@ -223,7 +296,7 @@ export const Header: React.FC<HeaderProps> = ({
                   onClick={onLogout}
                   style={{
                     background: 'rgba(239, 68, 68, 0.2)',
-                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
                     color: '#fca5a5',
                     padding: '6px',
                     borderRadius: '50%',
@@ -231,10 +304,10 @@ export const Header: React.FC<HeaderProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginLeft: '4px',
+                    marginLeft: '2px',
                     transition: 'all 0.15s ease'
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.4)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.45)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
                 >
                   <LogOut size={14} />
@@ -250,14 +323,15 @@ export const Header: React.FC<HeaderProps> = ({
                   background: 'rgba(20, 184, 166, 0.2)',
                   border: '1px solid rgba(20, 184, 166, 0.4)',
                   color: '#2dd4bf',
-                  padding: '7px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.85rem',
+                  padding: '7px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.84rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <LogIn size={15} />
@@ -265,20 +339,6 @@ export const Header: React.FC<HeaderProps> = ({
               </button>
             )
           )}
-
-          <button 
-            id="btn-header-new-consultation"
-            onClick={() => onSelectTab('consultation')}
-            className="btn btn-primary"
-            style={{
-              background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
-              boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
-              border: 'none'
-            }}
-          >
-            <PlusCircle size={18} />
-            Nouvelle Consultation
-          </button>
         </div>
       </div>
 
@@ -443,54 +503,58 @@ export const Header: React.FC<HeaderProps> = ({
           Plan d'Implémentation 2026
         </button>
 
-        {/* TAB ÉQUIPE MÉDICALE (Gestion du personnel par le Directeur) */}
-        <button
-          id="nav-tab-team"
-          onClick={() => onSelectTab('team')}
-          style={{
-            padding: '10px 16px',
-            background: currentTab === 'team' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-            border: 'none',
-            borderBottom: currentTab === 'team' ? '3px solid #2dd4bf' : '3px solid transparent',
-            color: currentTab === 'team' ? '#ffffff' : '#cbd5e1',
-            fontWeight: currentTab === 'team' ? 700 : 500,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            borderRadius: '6px 6px 0 0',
-            transition: 'all 0.15s ease'
-          }}
-        >
-          <Users size={17} />
-          <span>Équipe Médicale (Directeur)</span>
-        </button>
+        {/* TAB ÉQUIPE MÉDICALE (Visible uniquement pour Directeur / Admin / Super Admin) */}
+        {isDirectorOrAdmin && (
+          <button
+            id="nav-tab-team"
+            onClick={() => onSelectTab('team')}
+            style={{
+              padding: '10px 16px',
+              background: currentTab === 'team' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+              border: 'none',
+              borderBottom: currentTab === 'team' ? '3px solid #2dd4bf' : '3px solid transparent',
+              color: currentTab === 'team' ? '#ffffff' : '#cbd5e1',
+              fontWeight: currentTab === 'team' ? 700 : 500,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              borderRadius: '6px 6px 0 0',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <Users size={17} />
+            <span>Équipe Médicale (Directeur)</span>
+          </button>
+        )}
 
-        {/* TAB SUPER ADMIN */}
-        <button
-          id="nav-tab-superadmin"
-          onClick={() => onSelectTab('superadmin')}
-          style={{
-            padding: '10px 16px',
-            background: currentTab === 'superadmin' ? 'rgba(234, 88, 12, 0.25)' : 'transparent',
-            border: 'none',
-            borderBottom: currentTab === 'superadmin' ? '3px solid #f97316' : '3px solid transparent',
-            color: currentTab === 'superadmin' ? '#fdba74' : '#cbd5e1',
-            fontWeight: currentTab === 'superadmin' ? 800 : 600,
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            borderRadius: '6px 6px 0 0',
-            transition: 'all 0.15s ease',
-            marginLeft: 'auto'
-          }}
-        >
-          <Building2 size={17} color={currentTab === 'superadmin' ? '#fb923c' : '#5eead4'} />
-          <span>👑 Super Admin (Contrôle Cliniques)</span>
-        </button>
+        {/* TAB SUPER ADMIN (STRICTEMENT RÉSERVÉ AU SUPER ADMIN : Salifou et les autres ne le voient PAS) */}
+        {isSuperAdmin && (
+          <button
+            id="nav-tab-superadmin"
+            onClick={() => onSelectTab('superadmin')}
+            style={{
+              padding: '10px 16px',
+              background: currentTab === 'superadmin' ? 'rgba(234, 88, 12, 0.25)' : 'transparent',
+              border: 'none',
+              borderBottom: currentTab === 'superadmin' ? '3px solid #f97316' : '3px solid transparent',
+              color: currentTab === 'superadmin' ? '#fdba74' : '#cbd5e1',
+              fontWeight: currentTab === 'superadmin' ? 800 : 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              borderRadius: '6px 6px 0 0',
+              transition: 'all 0.15s ease',
+              marginLeft: 'auto'
+            }}
+          >
+            <Building2 size={17} color={currentTab === 'superadmin' ? '#fb923c' : '#5eead4'} />
+            <span>👑 Super Admin (Contrôle Cliniques)</span>
+          </button>
+        )}
       </div>
     </header>
   );
