@@ -126,8 +126,10 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0 }}>
-                  CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI
+                <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, textTransform: 'uppercase' }}>
+                  {selectedSite ? selectedSite : (
+                    <>CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI</>
+                  )}
                 </h1>
                 <span className="badge" style={{ background: 'rgba(234, 88, 12, 0.25)', color: '#fdba74', border: '1px solid rgba(234, 88, 12, 0.5)', fontSize: '0.68rem', padding: '2px 8px', borderRadius: '10px' }}>
                   Circuit Intégré

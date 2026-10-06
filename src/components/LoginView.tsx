@@ -192,10 +192,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
               fontSize: '1.45rem',
               fontWeight: 800,
               color: '#ffffff',
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.02em',
+              textTransform: 'uppercase'
             }}>
-              CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI
+              {activeClinic?.nom || (clinics && clinics.length > 0 ? clinics[0].nom : null) || (
+                <>CLINIQUE<span style={{ color: '#38bdf8' }}>-PLUS</span> CI</>
+              )}
             </h1>
+          </div>
+
+          <div style={{
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            color: '#38bdf8',
+            letterSpacing: '0.04em',
+            marginBottom: '3px'
+          }}>
+            CLINIQUE-PLUS CI • PORTAIL MÉDICAL
           </div>
 
           <p style={{

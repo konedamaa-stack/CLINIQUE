@@ -571,7 +571,7 @@ export const App: React.FC = () => {
           setIsGuestMode(true);
           showToast('Mode Invité activé. Vous pouvez vous connecter à tout moment.');
         }}
-        activeClinic={currentDomainClinic}
+        activeClinic={currentDomainClinic || (selectedSite ? clinics.find(c => c.nom === selectedSite) : null) || (clinics.length > 0 ? clinics[0] : null)}
         clinics={clinics}
       />
     );
