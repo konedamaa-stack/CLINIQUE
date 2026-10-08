@@ -578,7 +578,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', width: '100%', maxWidth: '100vw', minWidth: 0, boxSizing: 'border-box' }}>
       {/* Toast Notification */}
       {notification && (
         <div style={{
@@ -623,7 +623,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px 20px' }}>
+      <main style={{ flex: 1, maxWidth: '1440px', width: '100%', margin: '0 auto', padding: '24px 20px', minWidth: 0, boxSizing: 'border-box' }}>
         {/* TAB 1: DASHBOARD & KPIS */}
         {currentTab === 'dashboard' && (
           <KPIOverview

@@ -64,6 +64,8 @@ export const Header: React.FC<HeaderProps> = ({
       top: 0,
       zIndex: 1000,
       width: '100%',
+      maxWidth: '100vw',
+      minWidth: 0,
       boxSizing: 'border-box'
     }} className="no-print">
       {/* Top micro-bar: Côte d'Ivoire Health Ministry branding */}
@@ -456,6 +458,9 @@ export const Header: React.FC<HeaderProps> = ({
           alignItems: 'center',
           gap: '4px',
           width: '100%',
+          minWidth: 0,
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
           boxSizing: 'border-box'
         }}
       >
@@ -463,7 +468,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="nav-tab-dashboard"
           onClick={() => onSelectTab('dashboard')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'dashboard' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'dashboard' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -488,7 +493,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="nav-tab-consultation"
           onClick={() => onSelectTab('consultation')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'consultation' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'consultation' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -506,14 +511,14 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <FileText size={16} />
-          Fiche Intégrée (Circuit 5 Étapes)
+          Fiche Consultation
         </button>
 
         <button
           id="nav-tab-registry"
           onClick={() => onSelectTab('registry')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'registry' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'registry' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -531,7 +536,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <Users size={16} />
-          Registre des Patients
+          Registre Patients
           {casPresumesTBCount > 0 && (
             <span style={{
               background: '#dc2626',
@@ -551,7 +556,7 @@ export const Header: React.FC<HeaderProps> = ({
           id="nav-tab-appointments"
           onClick={() => onSelectTab('appointments')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'appointments' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'appointments' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -569,14 +574,14 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <Calendar size={16} />
-          Rendez-vous & Relances
+          Rendez-vous
         </button>
 
         <button
           id="nav-tab-protocols"
           onClick={() => onSelectTab('protocols')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'protocols' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'protocols' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -594,14 +599,14 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <BookOpen size={16} />
-          Protocoles Cliniques CI
+          Protocoles CI
         </button>
 
         <button
           id="nav-tab-plan"
           onClick={() => onSelectTab('plan')}
           style={{
-            padding: '9px 14px',
+            padding: '7px 11px',
             background: currentTab === 'plan' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
             border: 'none',
             borderBottom: currentTab === 'plan' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -619,7 +624,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
         >
           <ShieldAlert size={16} />
-          Plan d'Implémentation 2026
+          Plan 2026
         </button>
 
         {/* TAB ÉQUIPE MÉDICALE (Visible uniquement pour Directeur / Admin / Super Admin) */}
@@ -628,7 +633,7 @@ export const Header: React.FC<HeaderProps> = ({
             id="nav-tab-team"
             onClick={() => onSelectTab('team')}
             style={{
-              padding: '9px 14px',
+              padding: '7px 11px',
               background: currentTab === 'team' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
               border: 'none',
               borderBottom: currentTab === 'team' ? '3px solid #2dd4bf' : '3px solid transparent',
@@ -646,7 +651,7 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <Users size={16} />
-            <span>Équipe Médicale (Directeur)</span>
+            <span>Équipe Médicale</span>
           </button>
         )}
       </div>
