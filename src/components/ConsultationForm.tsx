@@ -12,7 +12,9 @@ import {
   ChevronRight, 
   ChevronLeft,
   ShieldCheck,
-  History
+  Search,
+  X,
+  CheckCircle2
 } from 'lucide-react';
 import type { 
   FicheConsultation, 
@@ -193,6 +195,10 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
     });
   };
 
+  // Search state for existing patients
+  const [patientSearchTerm, setPatientSearchTerm] = useState<string>('');
+  const [loadedPatientBanner, setLoadedPatientBanner] = useState<FicheConsultation | null>(null);
+
   // Extract unique known patients for quick re-consultation
   const uniqueExistingPatients = useMemo(() => {
     const map = new Map<string, FicheConsultation>();
@@ -203,6 +209,50 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
     }
     return Array.from(map.values());
   }, [existingFiches]);
+
+  // Interactive filter for search bar
+  const filteredExistingPatients = useMemo(() => {
+    const q = patientSearchTerm.trim().toLowerCase();
+    if (!q) return [];
+    return uniqueExistingPatients.filter(p => {
+      const nomComplet = `${p.admin.nom} ${p.admin.prenoms}`.toLowerCase();
+      const code = (p.codePatient || '').toLowerCase();
+      const tel = (p.admin.telephone || '').toLowerCase();
+      const numOrdre = (p.admin.numOrdre || '').toLowerCase();
+      const residence = (p.admin.residence || '').toLowerCase();
+      return nomComplet.includes(q) || code.includes(q) || tel.includes(q) || numOrdre.includes(q) || residence.includes(q);
+    }).slice(0, 8);
+  }, [patientSearchTerm, uniqueExistingPatients]);
+
+  // Duplicate Numéro d'ordre detection
+  const duplicateNumOrdreFiche = useMemo(() => {
+    const trimmed = admin.numOrdre?.trim();
+    if (!trimmed) return null;
+    return existingFiches.find(f => 
+      f.id !== initialFiche?.id && 
+      f.admin.numOrdre?.trim() === trimmed
+    ) || null;
+  }, [admin.numOrdre, existingFiches, initialFiche]);
+
+  const handleSelectExistingPatient = (selected: FicheConsultation) => {
+    setAdmin(prev => ({
+      ...selected.admin,
+      numOrdre: prev.numOrdre,
+      dateConsultation: new Date().toISOString().split('T')[0]
+    }));
+    setAntecedents({ ...selected.antecedents });
+    if (selected.suivi) {
+      setSuivi(prev => ({
+        ...prev,
+        contactAccompagnant: selected.suivi.contactAccompagnant || prev.contactAccompagnant,
+        agentCommunautaireAssigne: selected.suivi.agentCommunautaireAssigne || prev.agentCommunautaireAssigne
+      }));
+    }
+    setPatientCode(selected.codePatient);
+    setLoadedPatientBanner(selected);
+    setPatientSearchTerm('');
+  };
+
 
   const buildCurrentFiche = (): FicheConsultation => {
     const updatedTriage: TriageConstantesData = {
@@ -240,6 +290,11 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (duplicateNumOrdreFiche) {
+      alert(`⚠️ Numéro d'ordre en doublon !\nLe N° d'ordre "${admin.numOrdre}" est déjà attribué au patient ${duplicateNumOrdreFiche.admin.nom} ${duplicateNumOrdreFiche.admin.prenoms}.\nVeuillez choisir un autre numéro d'ordre avant d'enregistrer.`);
+      setActiveStep(1);
+      return;
+    }
     const finalFiche = buildCurrentFiche();
     onSave(finalFiche);
   };
@@ -354,62 +409,235 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
               Étape 1 : Accueil & Données Administratives du Consultant
             </h3>
 
-            {/* Quick existing patient loader */}
-            {uniqueExistingPatients.length > 0 && !initialFiche && (
+            {/* Bannière de confirmation patient chargé */}
+            {loadedPatientBanner && !initialFiche && (
               <div style={{
-                background: '#f0fdfa',
-                border: '1.5px dashed #0d9488',
-                borderRadius: '12px',
-                padding: '12px 18px',
-                marginBottom: '20px',
+                background: '#ecfdf5',
+                border: '1px solid #6ee7b7',
+                borderRadius: '10px',
+                padding: '10px 16px',
+                marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
-                gap: '12px'
+                gap: '10px',
+                animation: 'fadeIn 0.25s ease-out'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <History size={20} color="#0d9488" />
+                  <CheckCircle2 size={20} color="#059669" />
                   <div>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#0f766e' }}>
-                      Ce patient est-il déjà venu à la clinique ? (Nouvelle maladie / Visite de suivi)
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                      Sélectionnez son dossier pour pré-remplir ses données et conserver son historique médical unique.
-                    </div>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#065f46' }}>
+                      Dossier patient chargé : {loadedPatientBanner.admin.nom} {loadedPatientBanner.admin.prenoms}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: '#047857', marginLeft: '8px' }}>
+                      ({loadedPatientBanner.codePatient} • {loadedPatientBanner.admin.sexe === 'F' ? 'Femme' : 'Homme'}, {loadedPatientBanner.admin.age} ans • Tél : {loadedPatientBanner.admin.telephone})
+                    </span>
                   </div>
                 </div>
-
-                <select
-                  className="form-select"
-                  style={{ width: 'auto', minWidth: '320px', padding: '8px 12px', fontSize: '0.85rem', borderColor: '#0d9488', fontWeight: 600 }}
-                  onChange={(e) => {
-                    const selected = existingFiches?.find(f => f.codePatient === e.target.value);
-                    if (selected) {
-                      setAdmin(prev => ({
-                        ...selected.admin,
-                        numOrdre: prev.numOrdre,
-                        dateConsultation: new Date().toISOString().split('T')[0]
-                      }));
-                      setAntecedents({ ...selected.antecedents });
-                      setPatientCode(selected.codePatient);
-                    }
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoadedPatientBanner(null);
+                    setPatientCode(`CI-ABJ-2026-${String(Math.floor(1000 + Math.random() * 9000))}`);
+                    setAdmin({
+                      numOrdre: admin.numOrdre,
+                      dateConsultation: new Date().toISOString().split('T')[0],
+                      nom: '',
+                      prenoms: '',
+                      sexe: 'F',
+                      dateNaissance: '',
+                      age: 25,
+                      trancheAge: '25-49 ans',
+                      telephone: '+225 ',
+                      residence: '',
+                      modeEntree: 'venu_lui_meme',
+                      statutConjugal: 'celibataire',
+                      typePopulation: 'population_generale',
+                      typePopulationPrecision: '',
+                      protectionSociale: 'cmu',
+                      numeroAssurance: ''
+                    });
                   }}
-                  defaultValue=""
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #10b981',
+                    borderRadius: '6px',
+                    color: '#065f46',
+                    fontSize: '0.75rem',
+                    padding: '4px 10px',
+                    cursor: 'pointer',
+                    fontWeight: 600
+                  }}
                 >
-                  <option value="" disabled>-- Sélectionner un patient déjà enregistré --</option>
-                  {uniqueExistingPatients.map((p: FicheConsultation) => (
-                    <option key={p.codePatient} value={p.codePatient}>
-                      {p.admin.nom} {p.admin.prenoms} ({p.codePatient} - {p.admin.sexe}, {p.admin.age} ans)
-                    </option>
-                  ))}
-                </select>
+                  ✕ Réinitialiser (Nouveau patient)
+                </button>
+              </div>
+            )}
+
+            {/* Barre de Recherche Interactive pour Ancien Patient */}
+            {!initialFiche && (
+              <div style={{
+                background: '#f8fafc',
+                border: '1.5px solid #ccfbf1',
+                borderRadius: '12px',
+                padding: '14px 18px',
+                marginBottom: '20px',
+                boxShadow: '0 2px 8px rgba(13, 148, 136, 0.06)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Search size={18} color="#0d9488" />
+                    <span style={{ fontSize: '0.90rem', fontWeight: 800, color: '#0f766e' }}>
+                      Rechercher un Ancien Patient
+                    </span>
+                    <span style={{ fontSize: '0.72rem', background: '#ccfbf1', color: '#0f766e', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                      {uniqueExistingPatients.length} patient(s) enregistré(s)
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    Recherche par <strong>Nom</strong>, <strong>Prénom</strong>, <strong>Téléphone</strong>, <strong>N° Ordre</strong> ou <strong>Code Patient</strong>
+                  </span>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'relative', width: '100%' }}>
+                    <input
+                      id="input-search-ancien-patient"
+                      type="text"
+                      className="form-input"
+                      style={{
+                        paddingLeft: '38px',
+                        paddingRight: patientSearchTerm ? '34px' : '12px',
+                        borderColor: patientSearchTerm ? '#0d9488' : '#cbd5e1',
+                        background: '#ffffff',
+                        fontSize: '0.88rem',
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                      placeholder="Ex : KONE, Bakary, +225 07..., 0095, CI-ABJ..."
+                      value={patientSearchTerm}
+                      onChange={(e) => setPatientSearchTerm(e.target.value)}
+                    />
+                    <Search size={17} color="#0d9488" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    {patientSearchTerm && (
+                      <button
+                        type="button"
+                        onClick={() => setPatientSearchTerm('')}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                        title="Effacer la recherche"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Liste des résultats de recherche instantanée */}
+                  {patientSearchTerm.trim().length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      right: 0,
+                      background: '#ffffff',
+                      border: '1.5px solid #0d9488',
+                      borderRadius: '10px',
+                      boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
+                      zIndex: 60,
+                      maxHeight: '300px',
+                      overflowY: 'auto'
+                    }}>
+                      {filteredExistingPatients.length > 0 ? (
+                        <div>
+                          <div style={{ padding: '8px 14px', fontSize: '0.74rem', background: '#f0fdfa', color: '#0f766e', fontWeight: 700, borderBottom: '1px solid #ccfbf1' }}>
+                            {filteredExistingPatients.length} patient(s) trouvé(s) — Cliquez pour charger automatiquement les données :
+                          </div>
+                          {filteredExistingPatients.map((p) => (
+                            <div
+                              key={p.codePatient}
+                              onClick={() => handleSelectExistingPatient(p)}
+                              style={{
+                                padding: '10px 14px',
+                                borderBottom: '1px solid #f1f5f9',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0fdfa')}
+                              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{
+                                  width: '34px',
+                                  height: '34px',
+                                  borderRadius: '50%',
+                                  background: p.admin.sexe === 'F' ? 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                                  color: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.88rem',
+                                  fontWeight: 800,
+                                  flexShrink: 0
+                                }}>
+                                  {p.admin.nom.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div style={{ fontWeight: 800, fontSize: '0.90rem', color: '#0f172a' }}>
+                                    {p.admin.nom} {p.admin.prenoms}
+                                  </div>
+                                  <div style={{ fontSize: '0.76rem', color: '#64748b' }}>
+                                    {p.admin.sexe === 'F' ? 'Femme' : 'Homme'} • {p.admin.age} ans • Tél : {p.admin.telephone || 'Non renseigné'}
+                                    {p.admin.residence && ` • ${p.admin.residence}`}
+                                  </div>
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <span style={{ fontSize: '0.74rem', fontFamily: 'monospace', fontWeight: 700, background: '#f1f5f9', color: '#0f766e', padding: '3px 7px', borderRadius: '4px' }}>
+                                  {p.codePatient}
+                                </span>
+                                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '3px' }}>
+                                  N° Ordre : <strong style={{ color: '#475569' }}>{p.admin.numOrdre}</strong> • {p.admin.dateConsultation}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ padding: '18px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                          🔍 Aucun ancien patient ne correspond à « <strong>{patientSearchTerm}</strong> ». Vous pouvez saisir un nouveau patient ci-dessous.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
               <div className="form-group">
-                <label className="form-label form-label-required">Numéro d'ordre</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className="form-label form-label-required">Numéro d'ordre</label>
+                  {duplicateNumOrdreFiche && (
+                    <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertTriangle size={13} /> DÉJÀ EXISTANT
+                    </span>
+                  )}
+                </div>
                 <input 
                   id="input-num-ordre"
                   type="text" 
@@ -418,7 +646,78 @@ export const ConsultationForm: React.FC<ConsultationFormProps> = ({
                   value={admin.numOrdre}
                   onChange={(e) => setAdmin({ ...admin, numOrdre: e.target.value })}
                   placeholder="Ex: 0095"
+                  style={{
+                    borderColor: duplicateNumOrdreFiche ? '#dc2626' : undefined,
+                    backgroundColor: duplicateNumOrdreFiche ? '#fef2f2' : undefined,
+                    color: duplicateNumOrdreFiche ? '#991b1b' : undefined,
+                    fontWeight: duplicateNumOrdreFiche ? 700 : undefined
+                  }}
                 />
+                {duplicateNumOrdreFiche && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: '#fef2f2',
+                    border: '1.5px solid #fca5a5',
+                    color: '#991b1b',
+                    fontSize: '0.80rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    animation: 'fadeIn 0.2s ease-in'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                      <AlertTriangle size={16} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <div style={{ lineHeight: 1.4 }}>
+                        <strong>⚠️ Alerte Doublon :</strong> Le N° d'ordre <strong>"{admin.numOrdre}"</strong> est déjà attribué au patient <strong>{duplicateNumOrdreFiche.admin.nom} {duplicateNumOrdreFiche.admin.prenoms}</strong> ({duplicateNumOrdreFiche.codePatient} - Consultation du {duplicateNumOrdreFiche.admin.dateConsultation}).
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const existingNums = new Set(existingFiches.map(f => f.admin.numOrdre?.trim()));
+                          let candidate = Math.floor(1000 + Math.random() * 9000);
+                          while (existingNums.has(String(candidate))) {
+                            candidate = Math.floor(1000 + Math.random() * 9000);
+                          }
+                          setAdmin(prev => ({ ...prev, numOrdre: String(candidate) }));
+                        }}
+                        style={{
+                          background: '#dc2626',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '5px 12px',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ⚡ Générer un N° disponible
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSelectExistingPatient(duplicateNumOrdreFiche);
+                        }}
+                        style={{
+                          background: '#ffffff',
+                          color: '#0f766e',
+                          border: '1px solid #0d9488',
+                          borderRadius: '6px',
+                          padding: '5px 12px',
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📋 Charger ce patient ({duplicateNumOrdreFiche.admin.nom})
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
