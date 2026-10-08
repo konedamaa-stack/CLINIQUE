@@ -62,11 +62,9 @@ export const Header: React.FC<HeaderProps> = ({
       boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
       position: 'sticky',
       top: 0,
-      zIndex: 100,
+      zIndex: 1000,
       width: '100%',
-      maxWidth: '100vw',
-      boxSizing: 'border-box',
-      overflow: 'hidden'
+      boxSizing: 'border-box'
     }} className="no-print">
       {/* Top micro-bar: Côte d'Ivoire Health Ministry branding */}
       <div style={{

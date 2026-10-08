@@ -382,20 +382,27 @@ body {
 }
 
 /* ==========================================================================
-   Anti-Débordement & Header Responsive Controls
+   En-Tête Fixe (Sticky) & Anti-Débordement Sécurisé
    ========================================================================== */
-html, body {
+html {
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
-  position: relative;
+  overflow-x: clip;
+  scrollbar-gutter: stable;
+}
+
+body {
+  width: 100%;
+  overflow-x: clip;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 #root {
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Scroll horizontal fluide et invisible pour la barre d'onglets */
