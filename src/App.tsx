@@ -613,7 +613,18 @@ export const App: React.FC = () => {
           setCurrentTab(tab);
         }}
         selectedSite={selectedSite}
-        onSelectSite={setSelectedSite}
+        onSelectSite={(site) => {
+          const isSuperAdmin = Boolean(
+            currentUser && (
+              currentUser.role === 'super_admin' || 
+              currentUser.email?.toLowerCase() === 'konedamaa@gmail.com' ||
+              currentUser.nomComplet?.toLowerCase().includes('super administrateur')
+            )
+          );
+          if (isSuperAdmin) {
+            setSelectedSite(site);
+          }
+        }}
         casPresumesTBCount={stats.casPresumesTBTotal}
         isSupabaseConnected={isSupabaseConfigured}
         currentUser={currentUser}

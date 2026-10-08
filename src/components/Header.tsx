@@ -211,64 +211,66 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
 
-        {/* Center: Site Sanitaire selector (compact & responsive) */}
-        <div 
-          className="header-site-box"
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px', 
-            background: 'rgba(255, 255, 255, 0.08)', 
-            padding: '5px 10px', 
-            borderRadius: '10px', 
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            maxWidth: '240px',
-            minWidth: '130px',
-            flexShrink: 1,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        >
-          <Building2 size={16} color="#5eead4" style={{ flexShrink: 0 }} />
-          <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
-              <span style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Site Sanitaire</span>
-              {currentClinicDomain && (
-                <span style={{ fontSize: '0.62rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: 600, background: 'rgba(56, 189, 248, 0.15)', padding: '1px 4px', borderRadius: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
-                  🌐 {currentClinicDomain}
-                </span>
-              )}
-            </div>
-            <select 
-              id="site-selector"
-              value={selectedSite}
-              onChange={(e) => onSelectSite(e.target.value)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '0.80rem',
-                outline: 'none',
-                cursor: 'pointer',
-                textOverflow: 'ellipsis',
-                width: '100%',
-                padding: 0
-              }}
-            >
-              {availableClinics && availableClinics.length > 0 ? (
-                availableClinics.map((cl) => (
-                  <option key={cl.id} value={cl.nom} style={{ color: '#0f172a' }}>
-                    {cl.nom}
+        {/* Center: Sélecteur de clinique réservé exclusivement au Super Administrateur */}
+        {isSuperAdmin && (
+          <div 
+            className="header-site-box"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px', 
+              background: 'rgba(255, 255, 255, 0.08)', 
+              padding: '5px 10px', 
+              borderRadius: '10px', 
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              maxWidth: '240px',
+              minWidth: '130px',
+              flexShrink: 1,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            }}
+          >
+            <Building2 size={16} color="#5eead4" style={{ flexShrink: 0 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                <span style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Supervision Cliniques</span>
+                {currentClinicDomain && (
+                  <span style={{ fontSize: '0.62rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: 600, background: 'rgba(56, 189, 248, 0.15)', padding: '1px 4px', borderRadius: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
+                    🌐 {currentClinicDomain}
+                  </span>
+                )}
+              </div>
+              <select 
+                id="site-selector"
+                value={selectedSite}
+                onChange={(e) => onSelectSite(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.80rem',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  textOverflow: 'ellipsis',
+                  width: '100%',
+                  padding: 0
+                }}
+              >
+                {availableClinics && availableClinics.length > 0 ? (
+                  availableClinics.map((cl) => (
+                    <option key={cl.id} value={cl.nom} style={{ color: '#0f172a' }}>
+                      {cl.nom}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" style={{ color: '#0f172a' }}>
+                    Aucun établissement (Créer via 👑 Admin)
                   </option>
-                ))
-              ) : (
-                <option value="" style={{ color: '#0f172a' }}>
-                  Aucun établissement (Créer via 👑 Admin)
-                </option>
-              )}
-            </select>
+                )}
+              </select>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Right Section: Cloud Sync + User Profile Card ALIGNÉ À DROITE */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexShrink: 0 }}>
